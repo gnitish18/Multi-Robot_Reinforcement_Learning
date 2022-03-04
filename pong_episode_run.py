@@ -77,17 +77,6 @@ class Paddle:
 
     def move(self, i, paddles, balls, table_size):
         
-        # The program crashes if move_getter crashes. The runtime of 
-        # move_getter is not limited
-        
-        
-        
-        
-        ######################################## Alter this to input all balls and all people positions
-        ## This is the meat and grits portion that needs changing. This is basically the "predict" step
-        ## Need to train the policy function that this step uses as "move_getter"
-        
-        
         closest_distance = 10000
         closest_ball = None
         for ball in balls:
@@ -97,17 +86,15 @@ class Paddle:
                 closest_ball = ball
             
         
+        ################ THIS IS WHERE WE ADD A MODEL FOR MOVE SELECTION #########
+        
         direction = self.move_getter(self.frect.copy(), closest_ball.frect.copy(), tuple(table_size))
         
         ## What its going to look like
         
         #direction = self.move_getter(paddles.copy(), balls.copy(), tuple(table_size))
         
-        
-        
-        
-        
-        
+        ##########################################################################
         
         # The program continues if move_getter crashes. The runtime of
         # move_getter is limited
@@ -413,22 +400,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
             curr_rewards.append(0)
             
         rewards.append(curr_rewards)
-        
-#        if not display:
-#            continue
-##        if score != old_score:
-##            font = pygame.font.Font(None, 32)
-##            if score[0] != old_score[0]:
-##                screen.blit(font.render("Left scores!", True, white, black), [0, 32])
-##            else:
-##                screen.blit(font.render("Right scores!", True, white, black), [int(table_size[0]/2+20), 32])
-##
-#
-#
-#
-#
-#            pygame.display.flip()
-#            clock.tick(turn_wait_rate)
 
 
 ################ REMOVE THIS TO MAKE SIMS GO FAST (SCREEN WON'T RENDER)########################
@@ -441,30 +412,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         
 ###############################################################################################
 
-#
-#
-#
-#        pygame.event.pump()
-#        keys = pygame.key.get_pressed()
-#        if keys[K_q]:
-#            return
-#
-#
-#
-#        clock.tick(clock_rate)
-#
-##    font = pygame.font.Font(None, 64)
-##    if score[0] > score[1]:
-##        screen.blit(font.render("Left wins!", True, white, black), [24, 32])
-##    else:
-##        screen.blit(font.render("Right wins!", True, white, black), [24, 32])
-##    pygame.display.flip()
-##    clock.tick(2)
-##
-##    pygame.event.pump()
-##    while any(pygame.key.get_pressed()):
-##        pygame.event.pump()
-##        clock.tick(30)
+
 
     print(score)
     print("states: ", len(states), "actions: ", len(actions), "rewards: ", len(rewards), "next_states: ", len(next_states))
@@ -516,8 +464,10 @@ def init_game():
     paddles[3].move_getter = pong_ai
                         
          
-    #memories =
+    # How many episodes for each training session
     episodes = 50
+    
+    # Constructs the replay experiences
     memory_states = []
     memory_actions = []
     memory_rewards = []
@@ -532,6 +482,7 @@ def init_game():
         
         print("memory_states: ", len(memory_states), "memory_actions: ", len(memory_actions), "memory_rewards: ", len(memory_rewards), "memory_next_states: ", len(memory_next_states))
         
+    # saves to pickle
     with open("memory_states.txt", "wb") as fp:
         pickle.dump(memory_states, fp)
     print("States dumped...")
