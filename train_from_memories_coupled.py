@@ -62,6 +62,7 @@ def loss(curr_output, action, reward, target_output):
     
     Q2 = tf.gather(target_output[:, 0:2], tf.math.argmax(target_output[:, 0:2], 1), axis=1) + tf.gather(target_output[:, 2:4], tf.math.argmax(target_output[:, 2:4], 1), axis=1)
     
+    # The reward postions are the same. By only adding the 0-index I'm considering that number as a joint reward. This could certainly change
     y = gamma*Q2 + reward[:,0]
     
     loss = tf.keras.losses.MSE(Q1, y)

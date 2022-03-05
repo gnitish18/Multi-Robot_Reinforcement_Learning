@@ -52,16 +52,21 @@ class foosPong_model(tf.keras.Model):
 #        return 0
 
 def loss(curr_output, action, reward, target_output):
-    gamma = 0.8
+    gamma = 0.95
 
-    #curr_action = tf.math.argmax(curr_output, 1)
-#    curr_output = tf.round(curr_output)
-#    target_output = tf.round(target_output)
+    # model_output is shape (1,4),
+    # which is [paddle1 action1, paddle1 action2, paddle2 action1, paddle2 action2]
+    
+    # each position is the Q value for that paddle taking that action
+    # Thus, here we take the position of the max Q-value for each paddle
+    
+    # the target_model gets reset to equal curr_model every 100 epochs or whatever you want
     
     Q1 = tf.gather(curr_output[:, 0:2], tf.math.argmax(curr_output[:, 0:2], 1), axis=1) + tf.gather(curr_output[:, 2:4], tf.math.argmax(curr_output[:, 2:4], 1), axis=1)
     
     Q2 = tf.gather(target_output[:, 0:2], tf.math.argmax(target_output[:, 0:2], 1), axis=1) + tf.gather(target_output[:, 2:4], tf.math.argmax(target_output[:, 2:4], 1), axis=1)
     
+    # The reward postions are the same. By only adding the 0-index I'm considering that number as a joint reward. This could certainly change
     y = gamma*Q2 + reward[:,0]
     
     loss = tf.keras.losses.MSE(Q1, y)
@@ -70,9 +75,9 @@ def loss(curr_output, action, reward, target_output):
 def train_nn(memories, hasPrevModel=False):
 #################################################
 ### Tune these parameters for better training
-    lr = 0.00001
-    epochs = 10000
-    batch_size = 100
+    lr = 0.001
+    epochs = 1000
+    batch_size = 10000
   #################################################  
 
     
@@ -137,7 +142,7 @@ def train_nn(memories, hasPrevModel=False):
         print(template.format(epoch + 1, train_loss.result()))
         
         #updates target network
-        if epoch % 1000 == 0:
+        if epoch % 100 == 0:
             prev_model = curr_model
 
     curr_model.summary()
