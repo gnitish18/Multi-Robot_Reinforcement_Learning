@@ -18,29 +18,33 @@ class foosPong_model(tf.keras.Model):
     def __init__(self):
         super(foosPong_model, self).__init__()
         ###############################################
-        #self.drop = tf.keras.layers.Dropout(0.10)
+        self.drop = tf.keras.layers.Dropout(0.20)
+        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.2)
+        #self.n1 = tf.keras.layers.BatchNormalization()
+        #self.n2 = tf.keras.layers.BatchNormalization()
         
-        self.n1 = tf.keras.layers.BatchNormalization()
-        
-        #self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(96, activation='relu')
-        #self.d3 = tf.keras.layers.Dense(192, activation='relu')
-        self.d4 = tf.keras.layers.Dense(96, activation='relu')
-        #self.d5 = tf.keras.layers.Dense(48, activation='relu')
+        self.d1 = tf.keras.layers.Dense(48, activation='relu')
+        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d5 = tf.keras.layers.Dense(48, activation='relu')
         
         # size 4, so that each teammate has action space of (up, down)
         # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
-        self.d6 = tf.keras.layers.Dense(4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(4)
         
         ###############################################
         
     def call(self, x):
-        #x = self.d1(x)
+        x = self.gauss(x)
+        x = self.d1(x)
         x = self.d2(x)
-        #x = self.d3(x)
-        x = self.n1(x)
+        x = self.drop(x)
+        x = self.d3(x)
+        x = self.drop(x)
         x = self.d4(x)
-        #x = self.d5(x)
+        x = self.drop(x)
+        x = self.d5(x)
         return self.d6(x)
         
 
@@ -119,19 +123,19 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         if score != old_score:
             if score[0] != old_score[0]:
                 #-1 for each point opponent scores
-                curr_rewards.append(-2)
-                curr_rewards.append(-2)
+                curr_rewards.append(-50)
+                curr_rewards.append(-50)
             else:
                 #+1 each time our team scores
-                curr_rewards.append(1)
-                curr_rewards.append(1)
+                curr_rewards.append(0)
+                curr_rewards.append(0)
                 for i in lastPaddleIdxs:
                     # adds reward back to the time step that a paddle on our team hit the ball
                     if i != -1:
                         #print(i)
                         #print(idx)
-                        rewards[i][0] = rewards[i][0] + 3
-                        rewards[i][1] = rewards[i][1] + 3
+                        rewards[i][0] = rewards[i][0] + 100
+                        rewards[i][1] = rewards[i][1] + 100
         else:
             # Reward 0 if nothing happens?
             curr_rewards.append(0)
@@ -165,7 +169,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 
 def init_game(args):
-    table_size = (800, 800)
+    table_size = (800, 600)
     paddle_size = (5, 70)
     ball_size = (15, 15)
     paddle_speed = 5 #1

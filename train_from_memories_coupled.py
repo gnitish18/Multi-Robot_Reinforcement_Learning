@@ -19,28 +19,32 @@ class foosPong_model(tf.keras.Model):
     def __init__(self):
         super(foosPong_model, self).__init__()
         ###############################################
-        #self.drop = tf.keras.layers.Dropout(0.10)
-        
-        self.n1 = tf.keras.layers.BatchNormalization()
+        self.drop = tf.keras.layers.Dropout(0.20)
+        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.2)
+        #self.n1 = tf.keras.layers.BatchNormalization()
+        #self.n2 = tf.keras.layers.BatchNormalization()
         
         self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(96, activation='relu')
-#        self.d3 = tf.keras.layers.Dense(192, activation='relu')
-        self.d4 = tf.keras.layers.Dense(96, activation='relu')
+        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
         self.d5 = tf.keras.layers.Dense(48, activation='relu')
         
         # size 4, so that each teammate has action space of (up, down)
         # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
-        self.d6 = tf.keras.layers.Dense(4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(4)
         
         ###############################################
         
     def call(self, x):
+        x = self.gauss(x)
         x = self.d1(x)
         x = self.d2(x)
-#        x = self.d3(x)
-        x = self.n1(x)
+        x = self.drop(x)
+        x = self.d3(x)
+        x = self.drop(x)
         x = self.d4(x)
+        x = self.drop(x)
         x = self.d5(x)
         return self.d6(x)
 
@@ -62,20 +66,22 @@ def loss(curr_output, action, reward, target_output):
     
     Q2 = tf.gather(target_output[:, 0:2], tf.math.argmax(target_output[:, 0:2], 1), axis=1) + tf.gather(target_output[:, 2:4], tf.math.argmax(target_output[:, 2:4], 1), axis=1)
     
-    # The reward postions are the same. By only adding the 0-index I'm considering that number as a joint reward. This could certainly change
     y = gamma*Q2 + reward[:,0]
     
-    loss = tf.keras.losses.MSE(Q1, y)
+    loss = tf.keras.losses.MSE(y, Q1)
     return loss
     
 def train_nn(memories, curr_model, prev_model):
 #################################################
 ### Tune these parameters for better training
-    lr = 0.00005
+    lr = 0.00000025
+    #lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=1e-4, decay_steps=100, decay_rate=0.5)
     epochs = 100
-    batch_size = 500
+    batch_size = 50
   #################################################
-
+#    lr = 0.00000025
+#    epochs = 100 # best so far!
+#    batch_size = 50
     
     optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
     train_loss = tf.keras.metrics.Mean(name='train_loss')
@@ -102,25 +108,26 @@ def train_nn(memories, curr_model, prev_model):
         train_loss(current_loss)
 
     train_data = []
-    for i in range(memories[0].shape[0]):
-        state = memories[0][i,:]
-        action = memories[1][i,:]
-        reward = memories[2][i,:]
-        next_state = memories[3][i,:]
+#    for i in range(memories[0].shape[0]):
+#        state = memories[0][i,:]
+#        action = memories[1][i,:]
+#        reward = memories[2][i,:]
+#        next_state = memories[3][i,:]
+#        train_data.append(np.concatenate((state, action, reward, next_state)))
+
+    data_size = 10000
+    #idx = int(np.floor(np.random.random()*(memories[0].shape[0] - data_size)))
+    for i in range(data_size):
+        idx = int(np.floor(np.random.random()*(memories[0].shape[0])))
+            #if idx + i < memories[0].shape[0]:
+        state = memories[0][idx,:]
+        action = memories[1][idx,:]
+        reward = memories[2][idx,:]
+        next_state = memories[3][idx,:]
         train_data.append(np.concatenate((state, action, reward, next_state)))
-#
-#    data_size = 20000
-#    idx = int(np.floor(np.random.random()*(memories[0].shape[0] - data_size)))
-#    for i in range(data_size):
-#        if idx + i < memories[0].shape[0]:
-#            state = memories[0][idx+i,:]
-#            action = memories[1][idx+i,:]
-#            reward = memories[2][idx+i,:]
-#            next_state = memories[3][idx+i,:]
-#            train_data.append(np.concatenate((state, action, reward, next_state)))
 
     # could shuffle here. I'm unclear on randomizing each step or maintaining order
-    train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(100000).batch(batch_size)
+    train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(50000).batch(batch_size)
     #train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).batch(batch_size)
     
     for epoch in range(epochs):
@@ -134,7 +141,7 @@ def train_nn(memories, curr_model, prev_model):
         #updates target network
 #        if epoch % 50 == 0:
 #            prev_model = curr_model
-
+    curr_model.save_weights('./trained_weights/foosPong_model_integrated')
     return curr_model
     
 #    curr_model.summary()
