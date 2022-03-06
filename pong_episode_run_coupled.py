@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 
 import tensorflow as tf
-from objectClasses import *
+from objectClasses_coupled import *
 from train_from_memories_coupled import *
 
 white = [255, 255, 255]
