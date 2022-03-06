@@ -175,7 +175,6 @@ def init_game():
 
 
     paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 1), \
                Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
                
@@ -192,7 +191,7 @@ def init_game():
     
     def foosPong_ai(states, id):
         
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,24)))
+        output = foosPong(np.asarray(states, dtype='float32').reshape((1,22)))
         team_Q_values = tf.reshape(output, [2,2])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         
@@ -212,7 +211,6 @@ def init_game():
     paddles[0].move_getter = move_getter
     paddles[1].move_getter = move_getter
     paddles[2].move_getter = move_getter
-    paddles[3].move_getter = move_getter
             
     eps = 1.0
     yesRender = True

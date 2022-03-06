@@ -86,10 +86,10 @@ def train_nn(lr, memories, curr_model, prev_model):
 
     @tf.function
     def train_step(tensor):
-        state = tensor[:, :24]
-        action = tensor[:, 24:26]
-        reward = tensor[:, 26:28]
-        next_state = tensor[:, 28:]
+        state = tensor[:, :22]
+        action = tensor[:, 22:24]
+        reward = tensor[:, 24:26]
+        next_state = tensor[:, 26:]
         
         with tf.GradientTape() as tape:
             current_loss = loss(curr_model(state), action, reward, prev_model(next_state))
@@ -116,6 +116,7 @@ def train_nn(lr, memories, curr_model, prev_model):
         reward = memories[2][idx,:]
         next_state = memories[3][idx,:]
         train_data.append(np.concatenate((state, action, reward, next_state)))
+        
 
     # could shuffle here. I'm unclear on randomizing each step or maintaining order
     train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(50000).batch(batch_size)

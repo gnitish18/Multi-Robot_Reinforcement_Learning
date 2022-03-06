@@ -48,15 +48,9 @@ class foosPong_model(tf.keras.Model):
         x = self.drop(x)
         x = self.d6(x)
         return self.d7(x)
-        
-
-
-
 
 def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, e, yesRender=True, withTFmodel=False):
     score = [0, 0]
-    
-    
     
     states = [] #state of all paddles and all balls, positions and velocities
     actions = [] #actions that each paddle takes
@@ -198,7 +192,6 @@ def init_game(args):
 
 
     paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 1), \
                Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
                
@@ -214,7 +207,7 @@ def init_game(args):
            return  "up"
     
     def foosPong_ai(states, id):
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,24)))
+        output = foosPong(np.asarray(states, dtype='float32').reshape((1,22)))
         team_Q_values = tf.reshape(output, [2,2])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         
@@ -237,7 +230,6 @@ def init_game(args):
     paddles[0].move_getter = move_getter
     paddles[1].move_getter = move_getter
     paddles[2].move_getter = move_getter
-    paddles[3].move_getter = move_getter
         
         
         
