@@ -21,3 +21,4 @@ Things I'm trying:
 2. learning rate decays with each training seesion
 3. I'm doing smaller epochs (~15) but training more often in the loop (~every 10 episodes)
 4. Added small reward for balls moving in our right half plane (+1 for moving away from our goal line and -1 for moving towards)
+5. Smaller layers in the model seem to work better than larger layers (unless maybe we train longer...)
