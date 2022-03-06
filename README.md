@@ -2,8 +2,7 @@
 AA277 - Multi-Robot Control and Distributed Optimization
 
 
-To start trainging with the coupled files:
-in command window run: 
+To start training with the coupled files: 
 "python pong_episode_run_coupled.py --eps 1.0 --yesRender false --withTFmodel true"
 
 What it does:
