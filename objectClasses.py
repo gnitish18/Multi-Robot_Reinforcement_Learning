@@ -76,48 +76,19 @@ class Paddle:
     def factor_accelerate(self, factor):
         self.speed = factor*self.speed
 
-    def move(self, i, paddles, balls, table_size, states, withTFmodel):
-        
-        # The program crashes if move_getter crashes. The runtime of
-        # move_getter is not limited
-        
-        
-        
-        
-        ######################################## Alter this to input all balls and all people positions
-        ## This is the meat and grits portion that needs changing. This is basically the "predict" step
-        ## Need to train the policy function that this step uses as "move_getter"
-        
+    def move(self, i, paddles, balls, table_size, states, withTFmodel, e):
         
         closest_distance = 10000
         closest_ball = None
         for ball in balls:
-        # Checks distance to each ball
+            # Checks distance to each ball
             if np.linalg.norm(np.asarray(ball.get_center()) - np.asarray(self.frect.pos)) < closest_distance:
                 closest_distance = np.linalg.norm(np.asarray(ball.get_center()) - np.asarray(self.frect.pos))
                 closest_ball = ball
             
         
-#        withTFmodel = False
-#        if self.facing == 0:
-#            # change to true if you want only our team to have ai
-#            withTFmodel = False
+        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size))
         
-        direction = self.move_getter(withTFmodel, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size))
-        
-        ## What its going to look like
-        
-        #direction = self.move_getter(paddles.copy(), balls.copy(), tuple(table_size))
-        
-        
-        
-        
-        
-        
-        
-        # The program continues if move_getter crashes. The runtime of
-        # move_getter is limited
-        # direction = timeout(self.move_getter, (self.frect.copy(), enemy_frect.copy(), ball_frect.copy(), tuple(table_size)), {}, self.timeout)
         
         if direction == "up":
             self.frect.move_ip(0, -self.speed)
@@ -181,6 +152,7 @@ class Ball:
         self.dust_error = dust_error
         self.init_speed_mag = init_speed_mag
         self.prev_bounce = None
+        self.lastPaddleIdx = -1
 
     def get_center(self):
         return (self.frect.pos[0] + .5*self.frect.size[0], self.frect.pos[1] + .5*self.frect.size[1])
@@ -196,6 +168,7 @@ class Ball:
 
     def move(self, paddles, table_size, move_factor):
         moved = 0
+        paddled = 0
         walls_Rects = [Rect((-100, -100), (table_size[0]+200, 100)),
                        Rect((-100, table_size[1]), (table_size[0]+200, 100))]
 
@@ -229,6 +202,7 @@ class Ball:
                     self.frect.move_ip(-.1*self.speed[0], -.1*self.speed[1], move_factor)
                     
                     c += 1
+                    
                 theta = paddle.get_angle(self.frect.pos[1]+.5*self.frect.size[1])
                 
 
@@ -255,7 +229,7 @@ class Ball:
                 else:
                     self.speed = (v[0], v[1])
                 self.prev_bounce = paddle
-                
+                paddled = 1
 
                 while c > 0 or self.frect.intersect(paddle.frect):
                 
@@ -268,6 +242,8 @@ class Ball:
 
         if not moved:
             self.frect.move_ip(self.speed[0], self.speed[1], move_factor)
+        
+        return paddled
 
 
 def directions_from_input(paddle_rect, ball_rect, table_size):
@@ -330,14 +306,19 @@ def render(screen, paddles, balls, score, table_size):
 def check_point(score, balls, table_size):
     for i in range(len(balls)):
         ball = balls[i]
+        lastPaddleIdxs = []
         if ball.frect.pos[0]+ball.size[0]/2 < 0:
             score[1] += 1
+            #tracks which paddle hit the ball last, so that we can attribute the reward to the the right timestep
+            if ball.prev_bounce is not None and ball.prev_bounce.facing == 0:
+                lastPaddleIdxs.append(ball.lastPaddleIdx)
+                
             balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
-            #return (ball, score)
+            
         elif ball.frect.pos[0]+ball.size[0]/2 >= table_size[0]:
             balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
             score[0] += 1
             #return (ball, score)
 
-    return (balls, score)
+    return (balls, score, lastPaddleIdxs)
 

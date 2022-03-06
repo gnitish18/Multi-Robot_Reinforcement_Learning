@@ -17,34 +17,36 @@ class foosPong_model(tf.keras.Model):
     def __init__(self):
         super(foosPong_model, self).__init__()
         ###############################################
-        self.drop = tf.keras.layers.Dropout(0.20)
-        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.2)
-        #self.n1 = tf.keras.layers.BatchNormalization()
+        self.drop = tf.keras.layers.Dropout(0.2)
+        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.1)
+        self.n1 = tf.keras.layers.BatchNormalization()
         #self.n2 = tf.keras.layers.BatchNormalization()
         
         self.d1 = tf.keras.layers.Dense(48, activation='relu')
         self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48, activation='relu')
-        
-        # size 4, so that each teammate has action space of (up, down)
-        # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
-        self.d6 = tf.keras.layers.Dense(4)
+#        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(48, activation='relu')
+        self.d7 = tf.keras.layers.Dense(4)
         
         ###############################################
         
     def call(self, x):
+        
+        x = self.n1(x)
         x = self.gauss(x)
         x = self.d1(x)
         x = self.d2(x)
         x = self.drop(x)
-        x = self.d3(x)
-        x = self.drop(x)
-        x = self.d4(x)
-        x = self.drop(x)
+#        x = self.d3(x)
+#        x = self.drop(x)
+#        x = self.d4(x)
+#        x = self.drop(x)
         x = self.d5(x)
-        return self.d6(x)
+        x = self.drop(x)
+        x = self.d6(x)
+        return self.d7(x)
         
 
 
@@ -152,7 +154,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 
 def init_game():
-    table_size = (800, 800)
+    table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
     paddle_speed = 5 #1
