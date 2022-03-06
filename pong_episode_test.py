@@ -7,11 +7,13 @@ import numpy as np
 import pickle
 
 import tensorflow as tf
-from objectClasses import *
+from objectClasses_coupled import * # I changed this
 
 white = [255, 255, 255]
 black = [0, 0, 0]
 clock = pygame.time.Clock()
+
+# Might want to merge the classes/definitions in this file to be the same as the training file
 
 class foosPong_model(tf.keras.Model):
     def __init__(self):
@@ -37,17 +39,15 @@ class foosPong_model(tf.keras.Model):
     def call(self, x):
         x = self.gauss(x)
         x = self.d1(x)
-        x = self.d2(x)
-        x = self.drop(x)
-        x = self.d3(x)
-        x = self.drop(x)
-        x = self.d4(x)
-        x = self.drop(x)
+        # x = self.d2(x)
+        # x = self.drop(x)
+        # x = self.d3(x)
+        # x = self.drop(x)
+        # x = self.d4(x)
+        # x = self.drop(x)
         x = self.d5(x)
         return self.d6(x)
         
-
-
 
 
 def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, eps=0.3, yesRender=True, withTFmodel=False):
@@ -212,10 +212,12 @@ def init_game():
     paddles[2].move_getter = move_getter
     paddles[3].move_getter = move_getter
             
-    eps = 1.0
+    eps = 1.0 # ???*
     yesRender = True
     withTFmodel = True
     
+    # Load the trained weights
+    # At the moment, it takes simply the latest version fo the trained weights, want to stop overwriting at some point*
     if withTFmodel:
         foosPong = foosPong_model()
         foosPong.load_weights('./trained_weights/foosPong_model_integrated')

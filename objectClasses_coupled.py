@@ -49,7 +49,7 @@ class Paddle:
         self.facing = facing
         self.max_angle = max_angle
         self.timeout = timeout
-        self.id = id
+        self.id = id # where does this come from*
         #self.tf_model = tf_model
 
     def factor_accelerate(self, factor):

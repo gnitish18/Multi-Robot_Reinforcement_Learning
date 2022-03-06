@@ -219,11 +219,11 @@ def init_game(args):
         
     def move_getter(withTFmodel, e, states, id, paddle_frect, ball_frect, table_size):
         if withTFmodel:
-            if np.random.random() < e: # With probability epsilon, take the greedy action based on training... should be 1-e*
+            if np.random.random() < e: # With probability epsilon, emulate the dummy ball followers (is this a technique in another paper?)*
                 return pong_ai(paddle_frect, ball_frect, table_size)
-            else: # Else, explore!
-                return foosPong_ai(states, id) # Otherwise, emulate the dummy ball followers (is this a technique in another paper?)*
                 # How does this influence loss?* Compare to random/pure exploration input
+            else: # Else, explore!
+                return foosPong_ai(states, id) # Otherwise, take the intelligent action
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
     
@@ -235,8 +235,8 @@ def init_game(args):
     paddles[2].move_getter = move_getter
     paddles[3].move_getter = move_getter
     
-        
-        
+    
+    
     foosPong = foosPong_model()
     eps = float(args.eps)
     yesRender = True
@@ -248,7 +248,8 @@ def init_game(args):
        
        
     
-    episodes = 1000 # *Arguments... where to change memory?
+    episodes = 10 #1000 # *Arguments... where to change memory?
+    mem_buf_len = 1 #5000
     memory_states = []
     memory_actions = []
     memory_rewards = []
@@ -268,11 +269,11 @@ def init_game(args):
         
         # after so many steps, take a pause
         # foosPong_model = train_nn(memories, foosPong_model)
-        if len(memory_states) > 50000: # *Variable
-            if ep % 25 == 0: # Every 25 episodes, train
+        if len(memory_states) > mem_buf_len: # Why ths strict inequality? Shouldn't we delete the excess memories first, THEN train the neural net?*
+            if ep % 25 == 0: # Every 25 episodes, train the neural net for ? epochs*
                 memories = [np.asarray(memory_states, dtype='float32'), np.asarray(memory_actions, dtype='float32'), np.asarray(memory_rewards, dtype='float32'), np.asarray(memory_next_states, dtype='float32')]
                 
-                foosPong = train_nn(memories, foosPong, foosPong)# This seems like part of the problem, using the same network for target and main model
+                foosPong = train_nn(memories, foosPong, foosPong)# This seems like part of the problem, using the same network for target and main model***
             print("before", len(memory_states))
             del memory_states[0:len(ep_states)]
             del memory_actions[0:len(ep_actions)]
@@ -309,6 +310,7 @@ if __name__ == '__main__':
     parser.add_argument('--eps')
     parser.add_argument('--yesRender')
     parser.add_argument('--withTFmodel')
+    # Need to add a bunch of arguments*
 
     args = parser.parse_args()
     
