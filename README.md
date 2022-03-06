@@ -11,3 +11,12 @@ What it does:
 3. after memories is at least 50000, it pauses to retrain the model every 25 episodes
 4. Takes a random collection of 10000 samples from the memories to train on
 5. The right-team's movement choices gradually move from using the deterministic "closest-ball" method to using the model (by episode 200 it's all on the model)
+
+
+
+I'm using the _coupled files to train and the _test file to run the sim from the most recently saved weights
+
+Things I'm trying:
+1. Small batch sizes seem to work better ~10 has given me best results so far
+2. learning rate decays with each training seesion
+3. I'm doing smaller epochs (~15) but training more often in the loop (~every 10 episodes)
