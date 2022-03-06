@@ -20,10 +20,10 @@ class foosPong_model(tf.keras.Model):
         ###############################################
         self.drop = tf.keras.layers.Dropout(0.20)
         self.gauss = tf.keras.layers.GaussianNoise(stddev=0.2)
-        #self.n1 = tf.keras.layers.BatchNormalization()
-        #self.n2 = tf.keras.layers.BatchNormalization()
+        self.n1 = tf.keras.layers.BatchNormalization()
+        self.n2 = tf.keras.layers.BatchNormalization()
         
-        self.d1 = tf.keras.layers.Dense(48, activation='relu') # Why is this 48, don't 
+        self.d1 = tf.keras.layers.Dense(48, activation='relu') # Change shape, reduce neurons a bit?
         self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
         self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
         self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
@@ -36,14 +36,14 @@ class foosPong_model(tf.keras.Model):
         ###############################################
         
     def call(self, x):
-        x = self.gauss(x)
+        # x = self.gauss(x)
         x = self.d1(x)
-        x = self.d2(x)
-        x = self.drop(x)
-        x = self.d3(x)
-        x = self.drop(x)
-        x = self.d4(x)
-        x = self.drop(x)
+        # x = self.d2(x)
+        # x = self.drop(x)
+        # x = self.d3(x)
+        # x = self.drop(x)
+        # x = self.d4(x)
+        # x = self.drop(x)
         x = self.d5(x)
         return self.d6(x)
         
@@ -85,11 +85,11 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         # Take actions, move paddles...and add to memory actions
         curr_actions = []
         for i in range(len(paddles)):
-            if paddles[i].facing == 0: # Facing attribute is 
+            if paddles[i].facing == 0: # Facing attribute tells us compactly which team they're on, want to change if we want court side to change*
                 action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, e)
                 curr_actions.append(action)
             else:
-                action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, e)
+                action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, e) # We unilaterally tell the code not to use TF model if its on the opponent side of the court
         
         
         
@@ -206,11 +206,11 @@ def init_game(args):
         else:
            return  "up"
     
-    # We want to add another action
+    # We want to add another action*
     def foosPong_ai(states, id):
         output = foosPong(np.asarray(states, dtype='float32').reshape((1,24))) ## where does shape come from*
-        team_Q_values = tf.reshape(output, [2,2]) # opaque*
-        action_idx = tf.math.argmax(team_Q_values[id,:]).numpy() # Not just one number*
+        team_Q_values = tf.reshape(output, [2,2])
+        action_idx = tf.math.argmax(team_Q_values[id,:]).numpy() # Not just one number*?
         
         if action_idx == 0:
             return "down"
@@ -219,20 +219,22 @@ def init_game(args):
         
     def move_getter(withTFmodel, e, states, id, paddle_frect, ball_frect, table_size):
         if withTFmodel:
-            if np.random.random() < e:
+            if np.random.random() < e: # With probability epsilon, take the greedy action based on training... should be 1-e*
                 return pong_ai(paddle_frect, ball_frect, table_size)
-            else:
-                return foosPong_ai(states, id)
+            else: # Else, explore!
+                return foosPong_ai(states, id) # Otherwise, emulate the dummy ball followers (is this a technique in another paper?)*
+                # How does this influence loss?* Compare to random/pure exploration input
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
     
     
-    # Set move getter functions?* iterate as a loop
-    paddles[0].move_getter = move_getter # where is this defined?* two different things
-    paddles[1].move_getter = move_getter
+    # Set move getter functions -- we aren't passing arguments here, as we are setting an attribute as a function!
+    # See objectClasses file
+    paddles[0].move_getter = move_getter 
+    paddles[1].move_getter = move_getter 
     paddles[2].move_getter = move_getter
     paddles[3].move_getter = move_getter
-        
+    
         
         
     foosPong = foosPong_model()
@@ -246,7 +248,7 @@ def init_game(args):
        
        
     
-    episodes = 1000
+    episodes = 1000 # *Arguments... where to change memory?
     memory_states = []
     memory_actions = []
     memory_rewards = []
@@ -255,6 +257,7 @@ def init_game(args):
     for ep in range(episodes):
         print(f"\nEpisode: {ep}")
         ep_states, ep_actions, ep_rewards, ep_next_states = game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, eps-decay*ep, yesRender=yesRender, withTFmodel=withTFmodel)
+        # Note here, epsilon is decaying constantly per episode
         
         memory_states = memory_states + ep_states
         memory_actions = memory_actions + ep_actions
@@ -265,11 +268,11 @@ def init_game(args):
         
         # after so many steps, take a pause
         # foosPong_model = train_nn(memories, foosPong_model)
-        if len(memory_states) > 50000:
-            if ep % 25 == 0:
+        if len(memory_states) > 50000: # *Variable
+            if ep % 25 == 0: # Every 25 episodes, train
                 memories = [np.asarray(memory_states, dtype='float32'), np.asarray(memory_actions, dtype='float32'), np.asarray(memory_rewards, dtype='float32'), np.asarray(memory_next_states, dtype='float32')]
                 
-                foosPong = train_nn(memories, foosPong, foosPong)
+                foosPong = train_nn(memories, foosPong, foosPong)# This seems like part of the problem, using the same network for target and main model
             print("before", len(memory_states))
             del memory_states[0:len(ep_states)]
             del memory_actions[0:len(ep_actions)]

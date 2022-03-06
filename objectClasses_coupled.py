@@ -57,7 +57,7 @@ class Paddle:
 
     def move(self, i, paddles, balls, table_size, states, withTFmodel, e):
         
-        closest_distance = 10000
+        closest_distance = 10000 # Argument*
         closest_ball = None
         for ball in balls:
             # Checks distance to each ball
@@ -66,6 +66,9 @@ class Paddle:
                 closest_ball = ball
             
         
+        # This is where we actually pass arguments to the move_getter fcn defined in main script
+        # Presumably, we use copy() here to prevent problems
+        # WHere is self.id coming from?
         direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size))
         
         
@@ -142,8 +145,6 @@ class Ball:
 
     def factor_accelerate(self, factor):
         self.speed = (factor*self.speed[0], factor*self.speed[1])
-
-
 
     def move(self, paddles, table_size, move_factor):
         moved = 0
