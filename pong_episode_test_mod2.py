@@ -283,6 +283,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain',default = False,type=bool) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
+    parser.add_argument('--padSpeed',default = 1.0,type=float) # Speed of paddles
 
     args = parser.parse_args()
     

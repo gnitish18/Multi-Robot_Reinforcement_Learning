@@ -207,6 +207,9 @@ def init_game(args):
     yesRender = args.yesRender
     withTFmodel = args.withTFmodel
     pretrain = args.pretrain
+    
+    paddle_speed = args.padSpeed
+    
     indir = './trained_weights/'+args.indir
     savedir = './trained_weights/'+args.savedir
     
@@ -214,7 +217,6 @@ def init_game(args):
     table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
-    paddle_speed = 5 #1
     max_angle = 45
 
     paddle_bounce = 1.5 #1.2
@@ -229,8 +231,8 @@ def init_game(args):
     screen = pygame.display.set_mode(table_size)
     pygame.display.set_caption('PongAIvAI')
 
-    paddles = [Paddle((30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  0, timeout, 0), \
+    paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
+               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, .5*paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
@@ -383,6 +385,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain',default = False,type=bool) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
+    parser.add_argument('--padSpeed',default = 1.0,type=float) # Speed of paddles
     
     args = parser.parse_args()
     
