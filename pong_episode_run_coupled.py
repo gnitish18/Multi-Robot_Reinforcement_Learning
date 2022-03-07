@@ -207,8 +207,9 @@ def init_game(args):
     yesRender = args.yesRender
     withTFmodel = args.withTFmodel
     pretrain = args.pretrain
-    indir = args.indir
-    savedir = args.savedir
+    indir = './trained_weights/'+args.indir
+    savedir = './trained_weights/'+args.savedir
+    
 
     table_size = (800, 400)
     paddle_size = (5, 70)
@@ -291,7 +292,7 @@ def init_game(args):
     if withTFmodel:
         foosPong = foosPong_model()
         if pretrain: # If loading pretrained weights
-            foosPong.load_weights('./trained_weights/'+indir+'foosPong_model_integrated')
+            foosPong.load_weights(indir+'foosPong_model_integrated')
     
     memory_states = []
     memory_actions = []
@@ -357,6 +358,7 @@ def init_game(args):
         # NOTE: Training function already saves its metrics
         write2json(scores,savedir,fname="scores.json")
         write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
+        README = "Episode: "+(ep+1)+", can save other identifying features here"
         # write2json(no_bounces,savedir,fname="no-bounces.json")
         
     pygame.quit()
