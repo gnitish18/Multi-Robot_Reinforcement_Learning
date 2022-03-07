@@ -229,9 +229,9 @@ def init_game(args):
     screen = pygame.display.set_mode(table_size)
     pygame.display.set_caption('PongAIvAI')
 
-    paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
-               Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
+    paddles = [Paddle((30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  1, timeout, 0), \
+               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  0, timeout, 0), \
+               Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, .5*paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
     balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
@@ -358,7 +358,7 @@ def init_game(args):
         # NOTE: Training function already saves its metrics
         write2json(scores,savedir,fname="scores.json")
         write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
-        README = "Episode: "+(ep+1)+", can save other identifying features here"
+        README = "Episode: %d, can save other identifying features here" %(ep+1)
         # write2json(no_bounces,savedir,fname="no-bounces.json")
         
     pygame.quit()
