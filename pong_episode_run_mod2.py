@@ -342,7 +342,7 @@ def init_game(args):
             write2json(scores,savedir,fname="scores.json")
             write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
             README = "Episode: %d, can save other identifying features here" %(ep+1)
-            write2json(README,savedir,fname="README.txt")
+            write2json(README,savedir,fname="README.json")
             # write2json(no_bounces,savedir,fname="no-bounces.json")
         else: # If not training, then testing: don't delete anything and save at the end!
               # NOTE: This saves for every episode
