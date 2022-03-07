@@ -108,7 +108,6 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
         template = '\nEpoch {}, Loss: {}\n'
         print(template.format(epoch + 1, train_loss.result()))
         train_loss_save.append(train_loss.result().numpy().item()) # Convert to appropriate format
-        print("***TYPE***",type(train_loss.result().numpy().item())) # All these functions are to convert from eager tensor to regular python float
         #updates target network
 #        if epoch % 50 == 0:
 #            prev_model = curr_model
@@ -118,7 +117,7 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
     
     # Save loss and other metrics to .json files -- note, this fcn will create the path if it doesn't exist        
     write2json(train_loss_save,path,fname='train_loss.json')
-    
+    print("Saving training loss...")
     
     # Save tf weights
     curr_model.save_weights(path+'foosPong_model_integrated')

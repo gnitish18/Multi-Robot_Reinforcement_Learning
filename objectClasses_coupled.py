@@ -76,7 +76,7 @@ class Paddle:
     def factor_accelerate(self, factor):
         self.speed = factor*self.speed
 
-    def move(self, i, paddles, balls, table_size, states, withTFmodel, e):
+    def move(self, i, paddles, balls, table_size, states, withTFmodel, e, TRAIN):
         # Count both paddles (by team) and balls
         nos = [] # List containing total numbers
         noPaddles = [0,0] # List to store number of paddles one each team
@@ -98,7 +98,7 @@ class Paddle:
                 closest_ball = ball
             
         
-        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size),nos)
+        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size),nos,TRAIN)
         
         
         if direction == "up":

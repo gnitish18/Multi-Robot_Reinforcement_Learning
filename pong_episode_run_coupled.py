@@ -59,9 +59,7 @@ class foosPong_model(tf.keras.Model):
         x = self.d6(x)
         return self.d7(x)
 
-def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, eps, yesRender=True, withTFmodel=False): # Make sure that epsilon is processed properly here, reset defaults
-    score = [0, 0]
-    
+def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, eps, yesRender, withTFmodel, TRAIN): # Make sure that epsilon is processed properly here, reset defaults
     # Count both paddles (by team) and balls
     nos = [] # List containing total numbers
     noPaddles = [0,0] # List to store number of paddles one each team
@@ -78,9 +76,9 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
     actions = [] #actions that each paddle takes
     rewards = [] #sum of rewards after each movement
     next_states = []
-    scores = [] # Each ordered pair of scores
 
     idx = 0
+    score = [0, 0]
     while max(score) < score_to_win:
         old_score = score[:]
         #print(idx)
@@ -104,10 +102,10 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         curr_actions = []
         for i in range(len(paddles)):
             if paddles[i].facing == 0:
-                action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, eps)
+                action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, eps, TRAIN)
                 curr_actions.append(action)
             else:
-                action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, eps)
+                action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, eps, TRAIN)
         
         
         
@@ -172,12 +170,12 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         actions.append(curr_actions)
         next_states.append(new_states)
         rewards.append(curr_rewards)
-        scores.append(score)
         idx = idx + 1
 
 ################       SCREEN RENDER       ########################
 
-        if yesRender:
+        # if yesRender:
+        if False:
             render(screen, paddles, balls, score, table_size)
 
 ##########################################################################
@@ -186,12 +184,32 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
     
     print(score)
+    
     #print("idx", idx)
     print("states: ", len(states), "actions: ", len(actions), "rewards: ", len(rewards), "next_states: ", len(next_states))
-    return states, actions, rewards, next_states, scores
+    return states, actions, rewards, next_states, score # Episodal results
 
 
 def init_game(args):
+    # Define arguments
+    eps = float(args.eps)
+    episodes = args.noEps
+    eps_decay = args.epsDecay
+    gamma = args.gamma
+    lr = args.lr
+    lr_decay = args.lrDecay
+    mbuf_len = args.memBufLen
+    DQNint = args.DQNint
+    epochs = args.epch
+    batch_size = args.batSize
+    train_set_size = args.trainSetSize
+    TRAIN = args.TRAIN
+    yesRender = args.yesRender
+    withTFmodel = args.withTFmodel
+    pretrain = args.pretrain
+    indir = args.indir
+    savedir = args.savedir
+
     table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
@@ -238,7 +256,7 @@ def init_game(args):
         else:
            return  "up"
     
-        
+    
     def foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id): # Do we need eps here?*
         dimstate = 2*totalPaddles + 4*noBalls # Computed dimension of state space based on how many things
         output = foosPong(np.asarray(states, dtype='float32').reshape((1,dimstate)))
@@ -251,11 +269,14 @@ def init_game(args):
         else:
             return "up"
     
-    def move_getter(withTFmodel, eps, states, id, paddle_frect, ball_frect, table_size,nos):
+    def move_getter(withTFmodel, eps, states, id, paddle_frect, ball_frect, table_size, nos, TRAIN):
         if withTFmodel:
-            if np.random.random() < eps:
-                return pong_ai(paddle_frect, ball_frect, table_size)
-            else:
+            if TRAIN: # Only use epsilon-greedy for training
+                if np.random.random() < eps:
+                    return pong_ai(paddle_frect, ball_frect, table_size)
+                else:
+                    return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id)
+            else: # If not training (testing), return pure model output
                 return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id)
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
@@ -266,24 +287,6 @@ def init_game(args):
         eachPad.move_getter = move_getter
     
     # Migrate into game and DQN training setup    
-    eps = float(args.eps)
-    episodes = args.noEps
-    eps_decay = args.epsDecay
-    gamma = args.gamma
-    lr = args.lr
-    lr_decay = args.lrDecay
-    mbuf_len = args.memBufLen
-    DQNint = args.DQNint
-    epochs = args.epch
-    batch_size = args.batSize
-    train_set_size = args.trainSetSize
-    TRAIN = args.TRAIN
-    yesRender = args.yesRender
-    withTFmodel = args.withTFmodel
-    pretrain = args.pretrain
-    indir = args.indir
-    savedir = args.savedir
-    
     # If not training, load recently trained weights
     if withTFmodel:
         foosPong = foosPong_model()
@@ -294,17 +297,25 @@ def init_game(args):
     memory_actions = []
     memory_rewards = []
     memory_next_states = []
+    no_actions = []
+    scores = []
     
     for ep in range(episodes):
         print(f"\nEpisode: {ep}")
-        ep_states, ep_actions, ep_rewards, ep_next_states, scores = game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, eps-eps_decay*ep, yesRender=yesRender, withTFmodel=withTFmodel)
+        ep_states, ep_actions, ep_rewards, ep_next_states, ep_score = game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, eps-eps_decay*ep, yesRender, withTFmodel, TRAIN)
+        
+        # Compute total of actions for each paddle * MAY NEED TO CHANGE SIZE FOR DIFF NUM
+        pad_act = np.array(ep_actions) # Convert to numpy for easy summing along rows
+        ep_no_actions = np.sum(pad_act,axis=0).tolist() # To convert back from np.float32 to 'float' for json saving
         
         memory_states = memory_states + ep_states
         memory_actions = memory_actions + ep_actions
         memory_rewards = memory_rewards + ep_rewards
         memory_next_states = memory_next_states + ep_next_states
-        print("memory_states: ", len(memory_states), "memory_actions: ", len(memory_actions), "memory_rewards: ", len(memory_rewards), "memory_next_states: ", len(memory_next_states), "\n")
+        scores.append(ep_score)
         
+        no_actions.append(ep_no_actions)
+        print("memory_states: ", len(memory_states), "memory_actions: ", len(memory_actions), "memory_rewards: ", len(memory_rewards), "memory_next_states: ", len(memory_next_states), "\n")
         
         # after so many steps, take a pause
         # foosPong_model = train_nn(memories, foosPong_model)
@@ -313,9 +324,9 @@ def init_game(args):
                 if ep % DQNint == 0: # Some weird behavior here, star
                     memories = [np.asarray(memory_states, dtype='float32'), np.asarray(memory_actions, dtype='float32'), np.asarray(memory_rewards, dtype='float32'), np.asarray(memory_next_states, dtype='float32')]
                     
-                    print(epochs)
-                    print(batch_size)
-                    print(train_set_size)
+                    # print(epochs)
+                    # print(batch_size)
+                    # print(train_set_size)
                     foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, savedir)
                     lr = lr*(1 - lr_decay) # Decay learning rate
                 
@@ -325,6 +336,7 @@ def init_game(args):
 
                 del memory_next_states[0:len(ep_next_states)]
         else: # If not training, then testing: don't delete anything and save at the end!
+              # NOTE: This saves for every episode
             write2json(memory_states,savedir,fname="memory_states.json")
             print("States dumped...")
             
@@ -341,11 +353,13 @@ def init_game(args):
             
             print("All saved to trained_weights/"+savedir+"...")
         
+        # Save all of this stuff regardless:
+        # NOTE: Training function already saves its metrics
+        write2json(scores,savedir,fname="scores.json")
+        write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
+        # write2json(no_bounces,savedir,fname="no-bounces.json")
         
-            
-            
     pygame.quit()
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -369,11 +383,9 @@ if __name__ == '__main__':
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
     
     args = parser.parse_args()
-        
+    
     pygame.init()
     init_game(args)
 
-# Need to define nos
 # Need to tell others to import _coupled version of objclasses
 # Print number of epochs somewhere (perhaps in a readme... how to do when prematurely cancel?)
-# Prevent use of epsilon greedy strat when not training
