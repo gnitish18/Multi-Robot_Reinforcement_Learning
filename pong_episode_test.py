@@ -17,39 +17,38 @@ class foosPong_model(tf.keras.Model):
     def __init__(self):
         super(foosPong_model, self).__init__()
         ###############################################
-        self.drop = tf.keras.layers.Dropout(0.20)
-        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.2)
-        #self.n1 = tf.keras.layers.BatchNormalization()
+        self.drop = tf.keras.layers.Dropout(0.2)
+        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.1)
+        self.n1 = tf.keras.layers.BatchNormalization()
         #self.n2 = tf.keras.layers.BatchNormalization()
         
         self.d1 = tf.keras.layers.Dense(48, activation='relu')
         self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48, activation='relu')
-        
-        # size 4, so that each teammate has action space of (up, down)
-        # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
-        self.d6 = tf.keras.layers.Dense(4)
+        # self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+        # self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(48, activation='relu')
+        self.d7 = tf.keras.layers.Dense(4)
         
         ###############################################
         
     def call(self, x):
+        
+        x = self.n1(x)
         x = self.gauss(x)
         x = self.d1(x)
         x = self.d2(x)
         x = self.drop(x)
-        x = self.d3(x)
-        x = self.drop(x)
-        x = self.d4(x)
-        x = self.drop(x)
+        # x = self.d3(x)
+        # x = self.drop(x)
+        # x = self.d4(x)
+        # x = self.drop(x)
         x = self.d5(x)
-        return self.d6(x)
+        x = self.drop(x)
+        x = self.d6(x)
+        return self.d7(x)
         
-
-
-
-
+        
 def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, eps=0.3, yesRender=True, withTFmodel=False):
 
     score = [0, 0]
@@ -61,7 +60,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
     while max(score) < score_to_win:
         old_score = score[:]
-        
         
         #balls, score = check_point(score, balls, table_size)
         
@@ -77,7 +75,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
             curr_states.append(ball.speed[0])
             curr_states.append(ball.speed[1])
         
-       
         # Take actions...and add to memory actions
         curr_actions = []
         for i in range(len(paddles)):
@@ -86,8 +83,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
                 curr_actions.append(action)
             else:
                 action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, 1.0)
-        
-        
         
         for ball in balls:
             inv_move_factor = int((ball.speed[0]**2+ball.speed[1]**2)**.5)
@@ -107,10 +102,8 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
             new_states.append(ball.speed[0])
             new_states.append(ball.speed[1])
         
-        
         # Check if a ball scored and add rewards accordingly, so rewards[i] should correspond to actions taken at actions[i]
         balls, score, idxs = check_point(score, balls, table_size)
-        
         
         curr_rewards = []
         if score != old_score:
@@ -127,32 +120,26 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
             curr_rewards.append(0)
             curr_rewards.append(0)
             
-        
         if (np.random.random() < eps) or score != old_score:
             states.append(curr_states)
             actions.append(curr_actions)
             next_states.append(new_states)
             rewards.append(curr_rewards)
         
-
-
-################       SCREEN RENDER       ########################
+        ################       SCREEN RENDER       ########################
 
         if yesRender:
             render(screen, paddles, balls, score, table_size)
 
-##########################################################################
-
-
+        ##########################################################################
 
     print(score)
     print("states: ", len(states), "actions: ", len(actions), "rewards: ", len(rewards), "next_states: ", len(next_states))
     
     return states, actions, rewards, next_states
 
-
 def init_game():
-    table_size = (800, 800)
+    table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
     paddle_speed = 5 #1
@@ -166,21 +153,17 @@ def init_game():
     clock_rate = 200 #80
     turn_wait_rate = 3
     score_to_win = 10
-
-
+    
     screen = pygame.display.set_mode(table_size)
     pygame.display.set_caption('PongAIvAI')
-
-
+    
     paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
                Paddle((300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 1), \
                Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
-               
+    
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
     balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
-    
-    
     
     def pong_ai(paddle_frect, ball_frect, table_size):
         if paddle_frect.pos[1] + paddle_frect.size[1]/2 < ball_frect.pos[1] + ball_frect.size[1]/2:
@@ -205,7 +188,6 @@ def init_game():
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
     
-    
     # Set move getter functions
     paddles[0].move_getter = move_getter
     paddles[1].move_getter = move_getter
@@ -219,7 +201,7 @@ def init_game():
     if withTFmodel:
         foosPong = foosPong_model()
         foosPong.load_weights('./trained_weights/foosPong_model_integrated')
-       
+    
     #memories =
     episodes = 100
     memory_states = []
@@ -255,7 +237,6 @@ def init_game():
     print(np.asarray(memory_states).shape)
     
     pygame.quit()
-
 
 if __name__ == '__main__':
     pygame.init()
