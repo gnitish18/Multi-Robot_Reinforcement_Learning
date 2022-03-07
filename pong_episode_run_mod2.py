@@ -174,8 +174,8 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 ################       SCREEN RENDER       ########################
 
-        # if yesRender:
-        if False:
+        if yesRender:
+        # if False:
             render(screen, paddles, balls, score, table_size)
 
 ##########################################################################
@@ -229,9 +229,9 @@ def init_game(args):
     screen = pygame.display.set_mode(table_size)
     pygame.display.set_caption('PongAIvAI')
 
-    paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
-               Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
+    paddles = [Paddle((30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  1, timeout, 0), \
+               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  0, timeout, 0), \
+               Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, .5*paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
     balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
@@ -320,7 +320,7 @@ def init_game(args):
         
         # after so many steps, take a pause
         # foosPong_model = train_nn(memories, foosPong_model)
-        if TRAIN: # If train flag, then periodically truncate memory buffer
+        if TRAIN: # If train flag, then periodically truncate memory buffer and save training data
             if len(memory_states) > mbuf_len:
                 if ep % DQNint == 0: # Some weird behavior here, star
                     memories = [np.asarray(memory_states, dtype='float32'), np.asarray(memory_actions, dtype='float32'), np.asarray(memory_rewards, dtype='float32'), np.asarray(memory_next_states, dtype='float32')]
@@ -334,8 +334,14 @@ def init_game(args):
                 del memory_states[0:len(ep_states)]
                 del memory_actions[0:len(ep_actions)]
                 del memory_rewards[0:len(ep_rewards)]
-
                 del memory_next_states[0:len(ep_next_states)]
+                
+            # NOTE: Training function already saves its metrics and weights
+            write2json(scores,savedir,fname="scores.json")
+            write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
+            README = "Episode: %d, can save other identifying features here" %(ep+1)
+            write2json(README,savedir,fname="README.txt")
+            # write2json(no_bounces,savedir,fname="no-bounces.json")
         else: # If not training, then testing: don't delete anything and save at the end!
               # NOTE: This saves for every episode
             write2json(memory_states,savedir,fname="memory_states.json")
@@ -354,12 +360,6 @@ def init_game(args):
             
             print("All saved to trained_weights/"+savedir+"...")
         
-        # Save all of this stuff regardless:
-        # NOTE: Training function already saves its metrics
-        write2json(scores,savedir,fname="scores.json")
-        write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
-        README = "Episode: "+(ep+1)+", can save other identifying features here"
-        # write2json(no_bounces,savedir,fname="no-bounces.json")
         
     pygame.quit()
 
@@ -389,5 +389,4 @@ if __name__ == '__main__':
     pygame.init()
     init_game(args)
 
-# Need to tell others to import _coupled version of objclasses
-# Print number of epochs somewhere (perhaps in a readme... how to do when prematurely cancel?)
+# Save to separate folders when training and testng
