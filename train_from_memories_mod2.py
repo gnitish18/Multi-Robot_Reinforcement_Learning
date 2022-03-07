@@ -34,8 +34,12 @@ def loss(curr_output, action, reward, target_output,gamma):
     
     y = gamma*Q2 + reward[:,0]
     
-    loss = tf.keras.losses.MSE(y, Q1)
-    return loss
+    # loss = tf.keras.losses.MSE(y, Q1)
+    loss = tf.keras.losses.Huber() # MSE in the middle, MAE on the outsides
+    
+    # THe above gets TypeError: Expected float32 passed to parameter 'y' of op 'Equal', got 'auto' of type 'str' instead. Error: Expected float32, got 'auto' of type 'str' instead.
+    
+    return loss(y, Q1)
     
 def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, savedir):
 #################################################
@@ -120,7 +124,7 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
     print("Saving training loss...")
     
     # Save tf weights
-    curr_model.save_weights(path+'foosPong_model_integrated')
+    curr_model.save_weights(os.path.join(path,'foosPong_model_integrated'))
     return curr_model
     
 #    curr_model.summary()

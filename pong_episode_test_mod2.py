@@ -280,9 +280,10 @@ if __name__ == '__main__':
     parser.add_argument('--batSize',default = 10,type=int)
     parser.add_argument('--trainSetSize',default = 10000,type=int)
     parser.add_argument('--TRAIN',default = False,type=bool) # TRAIN=False means Testing, and will save memory buffer
-    parser.add_argument('--pretrain',default = False,type=bool) # If using pretrained weights
+    parser.add_argument('--pretrain',default = True,type=bool) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
+    parser.add_argument('--padSpeed',default = 1.0,type=float) # Speed of paddles
 
     args = parser.parse_args()
     

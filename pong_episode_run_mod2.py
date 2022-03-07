@@ -207,6 +207,9 @@ def init_game(args):
     yesRender = args.yesRender
     withTFmodel = args.withTFmodel
     pretrain = args.pretrain
+    
+    paddle_speed = args.padSpeed
+    
     indir = './trained_weights/'+args.indir
     savedir = './trained_weights/'+args.savedir
     
@@ -214,7 +217,6 @@ def init_game(args):
     table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
-    paddle_speed = 5 #1
     max_angle = 45
 
     paddle_bounce = 1.5 #1.2
@@ -340,7 +342,7 @@ def init_game(args):
             write2json(scores,savedir,fname="scores.json")
             write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
             README = "Episode: %d, can save other identifying features here" %(ep+1)
-            write2json(README,savedir,fname="README.txt")
+            write2json(README,savedir,fname="README.json")
             # write2json(no_bounces,savedir,fname="no-bounces.json")
         else: # If not training, then testing: don't delete anything and save at the end!
               # NOTE: This saves for every episode
@@ -383,6 +385,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain',default = False,type=bool) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
+    parser.add_argument('--padSpeed',default = 5.0,type=float) # Speed of paddles
     
     args = parser.parse_args()
     
