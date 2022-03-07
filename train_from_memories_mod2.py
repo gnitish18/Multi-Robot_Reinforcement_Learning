@@ -113,7 +113,7 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
 #            prev_model = curr_model
     
     # Define output dir
-    path='./trained_weights/'+savedir
+    path=savedir
     
     # Save loss and other metrics to .json files -- note, this fcn will create the path if it doesn't exist        
     write2json(train_loss_save,path,fname='train_loss.json')
