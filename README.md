@@ -1,6 +1,12 @@
 # Multi-Robot_Reinforcement_Learning
 AA277 - Multi-Robot Control and Distributed Optimization
 
+NEW: To start training with the "mod2" files:
+python pong_episode_run_mod2.py
+
+To test most recent training run:
+python pong_episode_test_mod2.py
+
 
 To start training with the coupled files: 
 "python pong_episode_run_coupled.py --eps 1.0 --yesRender false --withTFmodel true"
