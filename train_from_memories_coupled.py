@@ -1,6 +1,8 @@
 import pickle
+import json
 import tensorflow as tf
 import numpy as np
+import os
 
 ## Next steps to take
 # 1. Create base memory from a bunch of episodes with my baseAI
@@ -11,47 +13,20 @@ import numpy as np
 
 ### * Idea: crank up bounce speed and paddle speed and then train on PS/BS or vice-versa
 ###          - maybe it would learn to work with any PS/BS ratio....?
-
-
 ## prev_model = loadModel() or simpleModel
 
-class foosPong_model(tf.keras.Model):
-    def __init__(self):
-        super(foosPong_model, self).__init__()
-        ###############################################
-        self.drop = tf.keras.layers.Dropout(0.2)
-        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.1)
-        self.n1 = tf.keras.layers.BatchNormalization()
-        #self.n2 = tf.keras.layers.BatchNormalization()
-        
-        self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-#        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d6 = tf.keras.layers.Dense(48, activation='relu')
-        self.d7 = tf.keras.layers.Dense(4)
-        
-        ###############################################
-        
-    def call(self, x):
-        
-        x = self.n1(x)
-        x = self.gauss(x)
-        x = self.d1(x)
-        x = self.d2(x)
-        x = self.drop(x)
-#        x = self.d3(x)
-#        x = self.drop(x)
-#        x = self.d4(x)
-#        x = self.drop(x)
-        x = self.d5(x)
-        x = self.drop(x)
-        x = self.d6(x)
-        return self.d7(x)
+# NOTE: numbers need to be in native python 'float', NOT numpy.float32 (use .item() to convert)
+def write2json(data,path,fname): #NOTE: ONLY takes lists as input, no ndarrays
+    if not os.path.exists(path): # Create dir if doesn't already exist
+        os.makedirs(path)
+    with open(os.path.join(path,fname),'w') as output: # writing 'wb' here screws this mess up royally:
+                                                        # Raises "a bytes-like object is required, not 'str'", even when using '.tolist()' on component matrix
+        json.dump(data,output)
+        # pickle.dump(data,output)
+        # output.write(json.dumps(data))
 
-def loss(curr_output, action, reward, target_output):
-    gamma = 0.95
+def loss(curr_output, action, reward, target_output,gamma):
+    # gamma = 0.95
 
     Q1 = tf.gather(curr_output[:, 0:2], tf.math.argmax(curr_output[:, 0:2], 1), axis=1) + tf.gather(curr_output[:, 2:4], tf.math.argmax(curr_output[:, 2:4], 1), axis=1)
     
@@ -62,13 +37,13 @@ def loss(curr_output, action, reward, target_output):
     loss = tf.keras.losses.MSE(y, Q1)
     return loss
     
-def train_nn(lr, memories, curr_model, prev_model):
+def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, savedir):
 #################################################
 ### Tune these parameters for better training
     #lr = 0.0000025
     #lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=1e-4, decay_steps=100, decay_rate=0.5)
-    epochs = 15
-    batch_size = 10
+    # epochs = 15
+    # batch_size = 10
   #################################################
 #    lr = 0.00000025
 #    epochs = 100 # best so far!
@@ -79,20 +54,22 @@ def train_nn(lr, memories, curr_model, prev_model):
     
     
     @tf.function
-    def train(train_data):
+    def train(train_data,totalPaddles,noBalls):
         for tensor in train_data:
-            train_step(tensor)
+            train_step(tensor,totalPaddles,noBalls)
 
 
     @tf.function
-    def train_step(tensor):
-        state = tensor[:, :14]
-        action = tensor[:, 14:16]
-        reward = tensor[:, 16:18]
-        next_state = tensor[:, 18:]
+    def train_step(tensor,totalPaddles,noBalls):
+        trainPaddles = 2 # *Change if training more paddles
+        dimstate = 2*totalPaddles + 4*noBalls # Computed dimension of state space based on how many things
+        state = tensor[:, :dimstate]
+        action = tensor[:, dimstate:(dimstate+trainPaddles)]
+        reward = tensor[:, (dimstate+trainPaddles):(dimstate+trainPaddles+2)] # *Not sure what this 2 here is supposed to be
+        next_state = tensor[:, (dimstate+2*trainPaddles):]
         
         with tf.GradientTape() as tape:
-            current_loss = loss(curr_model(state), action, reward, prev_model(next_state))
+            current_loss = loss(curr_model(state), action, reward, prev_model(next_state),gamma)
 
         grad = tape.gradient(current_loss, curr_model.trainable_variables)
         optimizer.apply_gradients(zip(grad, curr_model.trainable_variables))
@@ -106,7 +83,7 @@ def train_nn(lr, memories, curr_model, prev_model):
 #        next_state = memories[3][i,:]
 #        train_data.append(np.concatenate((state, action, reward, next_state)))
 
-    data_size = 10000
+    data_size = train_set_size
     #idx = int(np.floor(np.random.random()*(memories[0].shape[0] - data_size)))
     for i in range(data_size):
         idx = int(np.floor(np.random.random()*(memories[0].shape[0])))
@@ -122,18 +99,29 @@ def train_nn(lr, memories, curr_model, prev_model):
     train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(50000).batch(batch_size)
     #train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).batch(batch_size)
     
+    train_loss_save = []
     for epoch in range(epochs):
         # Reset the metrics at the start of the next epoch
         train_loss.reset_states()
-        train(train_data_tf)
+        train(train_data_tf,totalPaddles,noBalls)
         #print("works")
         template = '\nEpoch {}, Loss: {}\n'
         print(template.format(epoch + 1, train_loss.result()))
-        
+        train_loss_save.append(train_loss.result().numpy().item()) # Convert to appropriate format
+        print("***TYPE***",type(train_loss.result().numpy().item())) # All these functions are to convert from eager tensor to regular python float
         #updates target network
 #        if epoch % 50 == 0:
 #            prev_model = curr_model
-    curr_model.save_weights('./trained_weights/foosPong_model_integrated')
+    
+    # Define output dir
+    path='./trained_weights/'+savedir
+    
+    # Save loss and other metrics to .json files -- note, this fcn will create the path if it doesn't exist        
+    write2json(train_loss_save,path,fname='train_loss.json')
+    
+    
+    # Save tf weights
+    curr_model.save_weights(path+'foosPong_model_integrated')
     return curr_model
     
 #    curr_model.summary()

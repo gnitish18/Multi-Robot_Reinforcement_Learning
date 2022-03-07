@@ -77,6 +77,17 @@ class Paddle:
         self.speed = factor*self.speed
 
     def move(self, i, paddles, balls, table_size, states, withTFmodel, e):
+        # Count both paddles (by team) and balls
+        nos = [] # List containing total numbers
+        noPaddles = [0,0] # List to store number of paddles one each team
+        for eachPad in paddles: # Check which direction paddles are facing and add to team count
+            if eachPad.facing == 0:
+                noPaddles[1] += 1 # RHS team
+            else:
+                noPaddles[0] += 1 # LHS team
+                
+        nos.append(noPaddles)
+        nos.append([len(balls)])
         
         closest_distance = 10000
         closest_ball = None
@@ -87,7 +98,7 @@ class Paddle:
                 closest_ball = ball
             
         
-        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size))
+        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size),nos)
         
         
         if direction == "up":
