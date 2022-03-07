@@ -24,11 +24,11 @@ class foosPong_model(tf.keras.Model):
         #self.n1 = tf.keras.layers.BatchNormalization()
         #self.n2 = tf.keras.layers.BatchNormalization()
         
-        self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48, activation='relu')
+        self.d1 = tf.keras.layers.Dense(16, activation='relu')
+        self.d2 = tf.keras.layers.Dense(16*4, activation='relu')
+        self.d3 = tf.keras.layers.Dense(16*8, activation='relu')
+        self.d4 = tf.keras.layers.Dense(16*4, activation='relu')
+        self.d5 = tf.keras.layers.Dense(16, activation='relu')
         
         # size 4, so that each teammate has action space of (up, down)
         # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
@@ -95,15 +95,14 @@ def train_nn(memories, curr_model, prev_model):
 
     @tf.function
     def train_step(tensor):
-        state = tensor[:, :24]
-        action = tensor[:, 24:26]
-        reward = tensor[:, 26:28]
-        next_state = tensor[:, 28:]
+        state = tensor[:, :16]
+        action = tensor[:, 16:18]
+        reward = tensor[:, 18:20]
+        next_state = tensor[:, 20:]
         
         with tf.GradientTape() as tape:
             current_loss = loss(curr_model(state), action, reward, prev_model(next_state))
-        
-        # Only training current/main model, target model is reset elsewhere
+
         grad = tape.gradient(current_loss, curr_model.trainable_variables)
         optimizer.apply_gradients(zip(grad, curr_model.trainable_variables))
         train_loss(current_loss)
@@ -115,12 +114,11 @@ def train_nn(memories, curr_model, prev_model):
 #        reward = memories[2][i,:]
 #        next_state = memories[3][i,:]
 #        train_data.append(np.concatenate((state, action, reward, next_state)))
-    
-    # Process training data:
-    data_size = 10000 # *needs argument
+
+    data_size = 20000
     #idx = int(np.floor(np.random.random()*(memories[0].shape[0] - data_size)))
     for i in range(data_size):
-        idx = int(np.floor(np.random.random()*(memories[0].shape[0]))) # *Not sure what's going on here
+        idx = int(np.floor(np.random.random()*(memories[0].shape[0])))
             #if idx + i < memories[0].shape[0]:
         state = memories[0][idx,:]
         action = memories[1][idx,:]
@@ -129,7 +127,6 @@ def train_nn(memories, curr_model, prev_model):
         train_data.append(np.concatenate((state, action, reward, next_state)))
 
     # could shuffle here. I'm unclear on randomizing each step or maintaining order
-    # Randomizing data simply stirs up the problem a bit*
     train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(50000).batch(batch_size)
     #train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).batch(batch_size)
     
@@ -141,7 +138,7 @@ def train_nn(memories, curr_model, prev_model):
         template = '\nEpoch {}, Loss: {}\n'
         print(template.format(epoch + 1, train_loss.result()))
         
-        #updates target network 
+        #updates target network
 #        if epoch % 50 == 0:
 #            prev_model = curr_model
     curr_model.save_weights('./trained_weights/foosPong_model_integrated')

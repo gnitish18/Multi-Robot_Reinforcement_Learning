@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 
 import tensorflow as tf
-from objectClasses import *
+from objectClasses_coupled import *
 
 white = [255, 255, 255]
 black = [0, 0, 0]
@@ -22,11 +22,11 @@ class foosPong_model(tf.keras.Model):
         #self.n1 = tf.keras.layers.BatchNormalization()
         #self.n2 = tf.keras.layers.BatchNormalization()
         
-        self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d4 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48, activation='relu')
+        self.d1 = tf.keras.layers.Dense(16, activation='relu')
+        self.d2 = tf.keras.layers.Dense(16*4, activation='relu')
+        self.d3 = tf.keras.layers.Dense(16*8, activation='relu')
+        self.d4 = tf.keras.layers.Dense(16*4, activation='relu')
+        self.d5 = tf.keras.layers.Dense(16, activation='relu')
         
         # size 4, so that each teammate has action space of (up, down)
         # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
@@ -152,7 +152,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 
 def init_game():
-    table_size = (800, 800)
+    table_size = (800, 600)
     paddle_size = (5, 70)
     ball_size = (15, 15)
     paddle_speed = 5 #1
@@ -178,7 +178,7 @@ def init_game():
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
-    balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
+    balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]#, Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
     
     
     
@@ -190,7 +190,7 @@ def init_game():
     
     def foosPong_ai(states, id):
         
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,24)))
+        output = foosPong(np.asarray(states, dtype='float32').reshape((1,16)))
         team_Q_values = tf.reshape(output, [2,2])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         
