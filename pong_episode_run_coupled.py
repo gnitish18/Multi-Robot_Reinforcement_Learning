@@ -1,4 +1,3 @@
-
 import pygame, sys, time, random, os
 from pygame.locals import *
 import argparse
@@ -25,8 +24,8 @@ class foosPong_model(tf.keras.Model):
         
         self.d1 = tf.keras.layers.Dense(48, activation='relu')
         self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-        # self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        # self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        # self.d3 = tf.keras.layers.Dense(24*8, activation='relu')
+        # self.d4 = tf.keras.layers.Dense(24*8, activation='relu')
         self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
         self.d6 = tf.keras.layers.Dense(48, activation='relu')
         self.d7 = tf.keras.layers.Dense(4)
@@ -187,10 +186,16 @@ def init_game(args):
     balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
     
     def pong_ai(paddle_frect, ball_frect, table_size):
-        if paddle_frect.pos[1] + paddle_frect.size[1]/2 < ball_frect.pos[1] + ball_frect.size[1]/2:
-           return "down"
+        if np.random.random() < 0.9:
+            if np.random.random() < 0.5:
+                return "down"
+            else:
+                return "up"
         else:
-           return  "up"
+            if paddle_frect.pos[1] + paddle_frect.size[1]/2 < ball_frect.pos[1] + ball_frect.size[1]/2:
+                return "down"
+            else:
+                return  "up"
     
     def foosPong_ai(states, id):
         output = foosPong(np.asarray(states, dtype='float32').reshape((1,24)))
