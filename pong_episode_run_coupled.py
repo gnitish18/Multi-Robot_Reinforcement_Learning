@@ -23,12 +23,12 @@ class foosPong_model(tf.keras.Model):
         self.n1 = tf.keras.layers.BatchNormalization()
         #self.n2 = tf.keras.layers.BatchNormalization()
         
-        self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d1 = tf.keras.layers.Dense(28, activation='relu')
+        self.d2 = tf.keras.layers.Dense(28*4, activation='relu')
 #        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
 #        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
-        self.d6 = tf.keras.layers.Dense(48, activation='relu')
+        # self.d5 = tf.keras.layers.Dense(28*4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(28, activation='relu')
         self.d7 = tf.keras.layers.Dense(4)
         
         ###############################################
@@ -44,8 +44,8 @@ class foosPong_model(tf.keras.Model):
 #        x = self.drop(x)
 #        x = self.d4(x)
 #        x = self.drop(x)
-        x = self.d5(x)
-        x = self.drop(x)
+        # x = self.d5(x)
+        # x = self.drop(x)
         x = self.d6(x)
         return self.d7(x)
 
@@ -196,7 +196,7 @@ def init_game(args):
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
-    balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
+    balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
     
     
     
@@ -207,7 +207,7 @@ def init_game(args):
            return  "up"
     
     def foosPong_ai(states, id):
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,22)))
+        output = foosPong(np.asarray(states, dtype='float32').reshape((1,14)))
         team_Q_values = tf.reshape(output, [2,2])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         

@@ -86,10 +86,10 @@ def train_nn(lr, memories, curr_model, prev_model):
 
     @tf.function
     def train_step(tensor):
-        state = tensor[:, :22]
-        action = tensor[:, 22:24]
-        reward = tensor[:, 24:26]
-        next_state = tensor[:, 26:]
+        state = tensor[:, :14]
+        action = tensor[:, 14:16]
+        reward = tensor[:, 16:18]
+        next_state = tensor[:, 18:]
         
         with tf.GradientTape() as tape:
             current_loss = loss(curr_model(state), action, reward, prev_model(next_state))
