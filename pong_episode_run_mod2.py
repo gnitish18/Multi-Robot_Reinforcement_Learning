@@ -229,8 +229,8 @@ def init_game(args):
     screen = pygame.display.set_mode(table_size)
     pygame.display.set_caption('PongAIvAI')
 
-    paddles = [Paddle((30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, .5*paddle_speed, max_angle,  0, timeout, 0), \
+    paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
+               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
                Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, .5*paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
