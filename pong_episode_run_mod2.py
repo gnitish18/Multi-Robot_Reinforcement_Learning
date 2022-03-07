@@ -7,8 +7,8 @@ import numpy as np
 import pickle
 
 import tensorflow as tf
-from objectClasses_coupled import *
-from train_from_memories_coupled import *
+from objectClasses_mod2 import *
+from train_from_memories_mod2 import *
 
 white = [255, 255, 255]
 black = [0, 0, 0]

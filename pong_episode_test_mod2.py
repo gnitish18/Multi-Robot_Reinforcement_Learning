@@ -8,7 +8,7 @@ import pickle
 
 import tensorflow as tf
 from objectClasses import *
-from pong_episode_run_coupled import *
+from pong_episode_run_mod2 import *
 
 # NOTE: may want to change rewards/metrics in this testing script, in that case redesign game_loop
 
