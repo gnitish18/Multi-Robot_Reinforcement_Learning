@@ -5,7 +5,7 @@ import argparse
 import math
 import numpy as np
 import pickle
-
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from objectClasses_coupled import *
 from train_from_memories_coupled import *
@@ -281,9 +281,9 @@ def init_game(args):
     #foosPong = foosPong_model()
     
     foosPong_l = foosPong_left()
-    foosPong_l.load_weights('./trained_weights/foosPong_model_integrated_leftTeam')
+    foosPong_l.load_weights('./trained_weights/foosPong_model_SELFPLAY_left_v1')
     foosPong_r = foosPong_right()
-    foosPong_r.load_weights('./trained_weights/foosPong_model_integrated_right_v4')
+    foosPong_r.load_weights('./trained_weights/foosPong_model_SELFPLAY_right_v1')
     
     eps = 0.0 #don't ever use heuristic...
     yesRender = True
@@ -300,9 +300,11 @@ def init_game(args):
     memory_rewards_right = []
     memory_next_states = []
     
+    action_counts = []
+    
     eps_decay = 0.05
     episodes = 1000
-    lr = 0.0000025
+    lr = 0.00000004
     lr_decay = 0.1
     for ep in range(episodes):
         print(f"\nEpisode: {ep}")
@@ -317,19 +319,24 @@ def init_game(args):
         
         print("Memory Size: ", len(memory_states))
         
+        action_counts.append(len(ep_states))
         
+        if ep % 10 == 0 and ep != 0:
+            with open("action_counts.txt", "wb") as fp:
+                pickle.dump(action_counts, fp)
+            print("Action Counts dumped...  Current Avg: ", np.mean(np.asarray(action_counts)))
         
         # after so many steps, take a pause
         # foosPong_model = train_nn(memories, foosPong_model)
         if len(memory_states) > 50000:
-            if ep % 10 == 0:
+            if ep % 5 == 0:
                 memories_left = [np.asarray(memory_states, dtype='float32'), np.asarray(memory_actions_left, dtype='float32'), np.asarray(memory_rewards_left, dtype='float32'), np.asarray(memory_next_states, dtype='float32')]
                 memories_right = [np.asarray(memory_states, dtype='float32'), np.asarray(memory_actions_right, dtype='float32'), np.asarray(memory_rewards_right, dtype='float32'), np.asarray(memory_next_states, dtype='float32')]
                 
                 foosPong_r = train_nn(lr, memories_right, foosPong_r, foosPong_r)
-                foosPong_r.save_weights('./trained_weights/foosPong_model_SELFPLAY_right')
+                foosPong_r.save_weights('./trained_weights/foosPong_model_SELFPLAY_right_v2') #og was v4
                 foosPong_l = train_nn(lr, memories_left, foosPong_l, foosPong_l)
-                foosPong_l.save_weights('./trained_weights/foosPong_model_SELFPLAY_left')
+                foosPong_l.save_weights('./trained_weights/foosPong_model_SELFPLAY_left_v2') #og was leftTeam
                 
                 lr = lr - lr_decay*lr
                 
