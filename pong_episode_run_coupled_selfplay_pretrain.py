@@ -197,7 +197,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 def init_game(args):
     # Define arguments
-    num_paddles = args.numPaddles
+    num_paddles = args.numPaddles 
     num_balls = args.numBalls
     paddle_dist = args.paddleDist
     side = 0 if args.whichSide == False else 1
@@ -282,11 +282,10 @@ def init_game(args):
            return  "up"
     
     
-    def foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id): # Do we need eps here?*
-        dimstate = 2*totalPaddles + 4*noBalls # Computed dimension of state space based on how many things
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,dimstate)))
+    def foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id): # Do we need eps here?*
+        output = foosPong(np.asarray(states, dtype='float32').reshape((1,statespace)))
         noActions = 2 # CHANGE WHEN DOING NO-OP
-        team_Q_values = tf.reshape(output, [noActions,noActions])
+        team_Q_values = tf.reshape(output, [int(totalPaddles/2), noActions])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         
         if action_idx == 0:
@@ -300,9 +299,9 @@ def init_game(args):
                 if np.random.random() < eps:
                     return pong_ai(paddle_frect, ball_frect, table_size)
                 else:
-                    return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id)
+                    return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id)
             else: # If not training (testing), return pure model output
-                return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id)
+                return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id)
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
     
@@ -389,7 +388,7 @@ def init_game(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--numPaddles', default = 2,type=int) # Total number of paddles in a team (e.g. if --numPaddles == 2, we have two on each team)
+    parser.add_argument('--numPaddles', default = 3,type=int) # Total number of paddles in a team (e.g. if --numPaddles == 2, we have two on each team)
     parser.add_argument('--numBalls', default = 2,type=int) # Total number of balls in the game
     parser.add_argument('--paddleDist', default = 100.0,type=float) # Distance between paddles
     parser.add_argument('--whichSide', default = False,type=bool) # True is left, False is right -- refers to which side our trained agents would be playing on
