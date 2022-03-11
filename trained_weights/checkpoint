@@ -1,2 +1,2 @@
-model_checkpoint_path: "foosPong_model_SELFPLAY_left"
-all_model_checkpoint_paths: "foosPong_model_SELFPLAY_left"
+model_checkpoint_path: "basic_huberfoosPong_model_right"
+all_model_checkpoint_paths: "basic_huberfoosPong_model_right"

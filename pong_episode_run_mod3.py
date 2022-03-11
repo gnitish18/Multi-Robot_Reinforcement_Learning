@@ -1,4 +1,5 @@
-import pygame, sys, time, random, os
+import pygame
+import sys, time, random, os
 from pygame.locals import *
 import argparse
 import math
@@ -109,7 +110,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         
         
         for ball in balls:
-            paddled = 0
+            paddled = 0 # Reset 'paddled' indicator to zero for each timestep
             inv_move_factor = int((ball.speed[0]**2+ball.speed[1]**2)**.5)
             if inv_move_factor > 0:
                 for i in range(inv_move_factor):
@@ -119,6 +120,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
                 
             if paddled == 1:
                 ball.lastPaddleIdx = idx
+                ball.prev_bounce.no_hits += 1 # If the current ball was paddled in this timestep, then reference which paddle did it and tally a hit
             
        
         new_states = []
@@ -185,7 +187,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 ##########################################################################
 
-    for i in range(len(balls)):
+    for i in range(len(balls)): # Why are balls again reviewed here?
         balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
     
     print(score)
@@ -212,17 +214,22 @@ def init_game(args):
     epochs = args.epch
     batch_size = args.batSize
     train_set_size = args.trainSetSize
-    TRAIN = False if args.train == 'False' else True
+    TRAIN = True if args.train == 'True' else False
     yesRender = False if args.yesRender == 'False' else True 
     withTFmodel = False if args.withTFmodel == 'False' else True 
     pretrain = True if args.pretrain == 'True' else False 
     HUBER = False if args.pretrain == 'False' else True 
+    print("Huber is",HUBER)
     statespace = 2*2*num_paddles + 4*num_balls
     actionspace = 2*num_paddles
     paddle_speed = args.padSpeed
+    init_speed_mag = args.initBallSpeed
     
-    indir = './trained_weights/'+args.indir
-    savedir = './trained_weights/'+args.savedir
+    # NOTE: uncomment if you aren't Alec
+    # indir = './trained_weights/'+args.indir
+    # savedir = './trained_weights/'+args.savedir
+    indir = 'C:/Users/Alec/Documents/GitHub/Multi-Robot_Reinforcement_Learning/trained_weights/'+args.indir
+    savedir = 'C:/Users/Alec/Documents/GitHub/Multi-Robot_Reinforcement_Learning/trained_weights/'+args.savedir
     
 
     table_size = (800, 400)
@@ -234,7 +241,6 @@ def init_game(args):
     paddle_bounce = 1.5 #1.2
     wall_bounce = 1.00
     dust_error = 0.00
-    init_speed_mag = 2
     timeout = 0.0003
     clock_rate = 200 #80
     turn_wait_rate = 3
@@ -301,7 +307,7 @@ def init_game(args):
                     return pong_ai(paddle_frect, ball_frect, table_size)
                 else:
                     return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id)
-            else: # If not training (testing), return pure model output
+            else: # If not training (i.e. are testing), return pure model output
                 return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id)
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
@@ -321,11 +327,13 @@ def init_game(args):
             else: 
                 foosPong.load_weights(indir+'foosPong_model_left')
     
+    # Initiate a bunch of lists that will be used to store end-of-game data
     memory_states = []
     memory_actions = []
     memory_rewards = []
     memory_next_states = []
     no_actions = []
+    no_hits = []
     scores = []
     
     for ep in range(episodes):
@@ -336,6 +344,12 @@ def init_game(args):
         pad_act = np.array(ep_actions) # Convert to numpy for easy summing along rows
         ep_no_actions = np.sum(pad_act,axis=0).tolist() # To convert back from np.float32 to 'float' for json saving
         
+        # Elicit no. hits per paddle
+        # NOTE will store in the order the paddles are 
+        hitsPerPad = []
+        for paddle in paddles:
+            hitsPerPad.append(paddle.no_hits)
+        
         memory_states = memory_states + ep_states
         memory_actions = memory_actions + ep_actions
         memory_rewards = memory_rewards + ep_rewards
@@ -343,6 +357,7 @@ def init_game(args):
         scores.append(ep_score)
         
         no_actions.append(ep_no_actions)
+        no_hits.append(hitsPerPad)
         print("memory_states: ", len(memory_states), "memory_actions: ", len(memory_actions), "memory_rewards: ", len(memory_rewards), "memory_next_states: ", len(memory_next_states), "\n")
         
         # after so many steps, take a pause
@@ -355,7 +370,7 @@ def init_game(args):
                     # print(epochs)
                     # print(batch_size)
                     # print(train_set_size)
-                    foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, side, savedir,HUBER)
+                    foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, mbuf_len, totalPaddles, noBalls, side, savedir,HUBER)
                     lr = lr*(1 - lr_decay) # Decay learning rate
                 
                 del memory_states[0:len(ep_states)]
@@ -366,9 +381,8 @@ def init_game(args):
             # NOTE: Training function already saves its metrics and weights
             write2json(scores,savedir,fname="scores.json")
             write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
-            write2json(no_actions,savedir,fname="no-bounces.json")  # saving total number of actions for each of the trained paddles for each episode
+            write2json(no_hits,savedir,fname="no-hits.json")  # saving total number of actions for each of the trained paddles for each episode
             README = "Episode: %d, can save other identifying features here" %(ep+1)
-            write2json(README,savedir,fname="README.json")
             # write2json(no_bounces,savedir,fname="no-bounces.json")
         else: # If not training, then testing: don't delete anything and save at the end!
               # NOTE: This saves for every episode
@@ -404,18 +418,19 @@ if __name__ == '__main__':
     parser.add_argument('--noEps', default = 1000,type=int) # Number of Episodes
     parser.add_argument('--stw', default = 10,type=int) # Score to win
     parser.add_argument('--memBufLen', default = 100000,type=int) # Max length of memory buffer
+    parser.add_argument('--trainSetSize',default = 20000,type=int) # Subset of memory buffer that will be used in each set of training
     parser.add_argument('--gamma', default = .95,type=float) # Discount for TD loss
     parser.add_argument('--lr', default = .0000025,type=float) # Learning rate of DQN
     parser.add_argument('--lrDecay', default = .25,type=float) # Decay rate of DQN lr, per training*implement as per epoch?
     parser.add_argument('--DQNint', default = 10,type=int) # How many episodes to wait between training DQN
     parser.add_argument('--epch',default=15,type=int)
     parser.add_argument('--batSize',default = 10,type=int)
-    parser.add_argument('--trainSetSize',default = 20000,type=int)
     parser.add_argument('--train',default = 'True',type=str) # True if training... changes some saving/loading options
     parser.add_argument('--pretrain',default = 'False',type=str) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
-    parser.add_argument('--padSpeed',default = 5.0,type=float) # Speed of paddles
+    parser.add_argument('--padSpeed',default = 5.0,type=float) # Speed of paddles, original is 5
+    parser.add_argument('--initBallSpeed',default = 2.0,type=float) # Speed of balls, original is 2
     parser.add_argument('--huber', default = 'False',type=str)
     
     args = parser.parse_args()

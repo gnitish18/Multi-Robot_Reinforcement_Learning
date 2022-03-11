@@ -27,7 +27,7 @@ def write2json(data,path,fname): #NOTE: ONLY takes lists as input, no ndarrays
         # pickle.dump(data,output)
         # output.write(json.dumps(data))
 
-def loss(curr_output, action, reward, target_output,gamma):
+def loss(curr_output, action, reward, target_output,gamma,HUBER):
     # gamma = 0.95
 
     Q1 = tf.gather(curr_output[:, 0:2], tf.math.argmax(curr_output[:, 0:2], 1), axis=1) + tf.gather(curr_output[:, 2:4], tf.math.argmax(curr_output[:, 2:4], 1), axis=1)
@@ -36,10 +36,14 @@ def loss(curr_output, action, reward, target_output,gamma):
     
     y = gamma*Q2 + reward[:,0]
     
-    loss = tf.keras.losses.MSE(y, Q1)
-    return loss
+    if HUBER:
+        loss = tf.keras.losses.Huber(y, Q1)
+        return loss
+    else: # defaults to MSE
+        loss = tf.keras.losses.MSE(y, Q1)
+        return loss
     
-def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, side, savedir):
+def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, train_set_size, mbuf_len, totalPaddles, noBalls, side, savedir,HUBER):
 #################################################
 ### Tune these parameters for better training
     #lr = 0.0000025
@@ -56,13 +60,13 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
     
     
     @tf.function
-    def train(train_data,totalPaddles,noBalls):
+    def train(train_data,totalPaddles,noBalls,HUBER):
         for tensor in train_data:
-            train_step(tensor,totalPaddles,noBalls)
+            train_step(tensor,totalPaddles,noBalls,HUBER)
 
 
     @tf.function
-    def train_step(tensor,totalPaddles,noBalls):
+    def train_step(tensor,totalPaddles,noBalls,HUBER):
         trainPaddles = 2 # *Change if training more paddles
         dimstate = 2*totalPaddles + 4*noBalls # Computed dimension of state space based on how many things
         state = tensor[:, :dimstate]
@@ -71,7 +75,7 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
         next_state = tensor[:, (dimstate+2*trainPaddles):]
         
         with tf.GradientTape() as tape:
-            current_loss = loss(curr_model(state), action, reward, prev_model(next_state),gamma)
+            current_loss = loss(curr_model(state), action, reward, prev_model(next_state),gamma,HUBER)
 
         grad = tape.gradient(current_loss, curr_model.trainable_variables)
         optimizer.apply_gradients(zip(grad, curr_model.trainable_variables))
@@ -98,14 +102,14 @@ def train_nn(lr, memories, curr_model, prev_model, gamma, epochs, batch_size, tr
         
 
     # could shuffle here. I'm unclear on randomizing each step or maintaining order
-    train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(50000).batch(batch_size)
+    train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).shuffle(mbuf_len).batch(batch_size) #***
     #train_data_tf = tf.data.Dataset.from_tensor_slices(train_data).batch(batch_size)
     
     train_loss_save = []
     for epoch in range(epochs):
         # Reset the metrics at the start of the next epoch
         train_loss.reset_states()
-        train(train_data_tf,totalPaddles,noBalls)
+        train(train_data_tf,totalPaddles,noBalls,HUBER)
         #print("works")
         template = '\nEpoch {}, Loss: {}\n'
         print(template.format(epoch + 1, train_loss.result()))

@@ -71,6 +71,7 @@ class Paddle:
         self.max_angle = max_angle
         self.timeout = timeout
         self.id = id
+        self.no_hits = 0 # Keeps track of number of times the ball was hit, a rough measure of training successfulness
         #self.tf_model = tf_model
 
     def factor_accelerate(self, factor):
