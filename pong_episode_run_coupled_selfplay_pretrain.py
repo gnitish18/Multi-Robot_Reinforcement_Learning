@@ -35,7 +35,7 @@ class foosPong_model(tf.keras.Model):
         self.d1 = tf.keras.layers.Dense(2*statespace, activation='relu')
         self.d2 = tf.keras.layers.Dense(2*statespace*4, activation='relu')
 #        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d4 = tf.keras.layers.Dense(2*statespace*6, activation='relu')
         self.d5 = tf.keras.layers.Dense(2*statespace*4, activation='relu')
         self.d6 = tf.keras.layers.Dense(2*statespace, activation='relu')
         self.d7 = tf.keras.layers.Dense(actionspace)
@@ -51,8 +51,8 @@ class foosPong_model(tf.keras.Model):
         x = self.drop(x)
 #        x = self.d3(x)
 #        x = self.drop(x)
-#        x = self.d4(x)
-#        x = self.drop(x)
+        x = self.d4(x)
+        x = self.drop(x)
         x = self.d5(x)
         x = self.drop(x)
         x = self.d6(x)
@@ -200,7 +200,7 @@ def init_game(args):
     num_paddles = args.numPaddles 
     num_balls = args.numBalls
     paddle_dist = args.paddleDist
-    side = 0 if args.whichSide == False else 1
+    side = 0 if args.whichSide == 'False' else 1
     eps = float(args.eps)
     episodes = args.noEps
     eps_decay = args.epsDecay
@@ -212,10 +212,10 @@ def init_game(args):
     epochs = args.epch
     batch_size = args.batSize
     train_set_size = args.trainSetSize
-    TRAIN = args.TRAIN
-    yesRender = args.yesRender
-    withTFmodel = args.withTFmodel
-    pretrain = args.pretrain
+    TRAIN = False if args.train == 'False' else True
+    yesRender = False if args.yesRender == 'False' else True 
+    withTFmodel = False if args.withTFmodel == 'False' else True 
+    pretrain = True if args.pretrain == 'True' else False 
     statespace = 2*2*num_paddles + 4*num_balls
     actionspace = 2*num_paddles
     paddle_speed = args.padSpeed
@@ -314,8 +314,11 @@ def init_game(args):
     # If not training, load recently trained weights
     if withTFmodel:
         foosPong = foosPong_model(statespace,actionspace)
-        if pretrain: # If loading pretrained weights
-            foosPong.load_weights(indir+'foosPong_model_integrated')
+        if pretrain:
+            if side == 0: # If loading pretrained weights
+                foosPong.load_weights(indir+'foosPong_model_right')
+            else: 
+                foosPong.load_weights(indir+'foosPong_model_left')
     
     memory_states = []
     memory_actions = []
@@ -368,49 +371,49 @@ def init_game(args):
         else: # If not training, then testing: don't delete anything and save at the end!
               # NOTE: This saves for every episode
             write2json(memory_states,savedir,fname="memory_states.json")
-            print("States dumped...")
+            #print("States dumped...")
             
             write2json(memory_actions,savedir,fname="memory_actions.json")
-            print("Actions dumped...")
+            #print("Actions dumped...")
             
             write2json(memory_rewards,savedir,fname="memory_rewards.json")
-            print("Rewards dumped...")
+            #print("Rewards dumped...")
             
             write2json(memory_next_states,savedir,fname="memory_next_states.json")
-            print("Next_states dumped...")
+            #print("Next_states dumped...")
             
             print(np.asarray(memory_states).shape)
             
-            print("All saved to trained_weights/"+savedir+"...")
+            #print("All saved to trained_weights/"+savedir+"...")
         
         
     pygame.quit()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--numPaddles', default = 3,type=int) # Total number of paddles in a team (e.g. if --numPaddles == 2, we have two on each team)
-    parser.add_argument('--numBalls', default = 2,type=int) # Total number of balls in the game
+    parser.add_argument('--numPaddles', default = 2,type=int) # Total number of paddles in a team (e.g. if --numPaddles == 2, we have two on each team)
+    parser.add_argument('--numBalls', default = 4,type=int) # Total number of balls in the game
     parser.add_argument('--paddleDist', default = 100.0,type=float) # Distance between paddles
-    parser.add_argument('--whichSide', default = False,type=bool) # True is left, False is right -- refers to which side our trained agents would be playing on
+    parser.add_argument('--whichSide', default = 'False',type=str) # True is left, False is right -- refers to which side our trained agents would be playing on
     parser.add_argument('--eps', default = 1.0,type=float) # Epsilon, initial percentage of exploratory behavior
     parser.add_argument('--epsDecay', default = 0.005,type=float) # Epsilon decay
-    parser.add_argument('--yesRender', default = True,type=bool)
-    parser.add_argument('--withTFmodel', default = True,type=bool)
+    parser.add_argument('--yesRender', default = 'False',type=str)
+    parser.add_argument('--withTFmodel', default = 'True',type=str)
     parser.add_argument('--noEps', default = 1000,type=int) # Number of Episodes
     parser.add_argument('--stw', default = 10,type=int) # Score to win
-    parser.add_argument('--memBufLen', default = 50000,type=int) # Max length of memory buffer
+    parser.add_argument('--memBufLen', default = 100000,type=int) # Max length of memory buffer
     parser.add_argument('--gamma', default = .95,type=float) # Discount for TD loss
-    parser.add_argument('--lr', default = .000005,type=float) # Learning rate of DQN
+    parser.add_argument('--lr', default = .0000025,type=float) # Learning rate of DQN
     parser.add_argument('--lrDecay', default = .25,type=float) # Decay rate of DQN lr, per training*implement as per epoch?
     parser.add_argument('--DQNint', default = 10,type=int) # How many episodes to wait between training DQN
     parser.add_argument('--epch',default=15,type=int)
     parser.add_argument('--batSize',default = 10,type=int)
-    parser.add_argument('--trainSetSize',default = 10000,type=int)
-    parser.add_argument('--TRAIN',default = True,type=bool) # True if training... changes some saving/loading options
-    parser.add_argument('--pretrain',default = False,type=bool) # If using pretrained weights
+    parser.add_argument('--trainSetSize',default = 20000,type=int)
+    parser.add_argument('--train',default = 'True',type=str) # True if training... changes some saving/loading options
+    parser.add_argument('--pretrain',default = 'False',type=str) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
-    parser.add_argument('--padSpeed',default = 1.0,type=float) # Speed of paddles
+    parser.add_argument('--padSpeed',default = 5.0,type=float) # Speed of paddles
     
     args = parser.parse_args()
     
