@@ -1,6 +1,11 @@
 # Multi-Robot_Reinforcement_Learning
 AA277 - Multi-Robot Control and Distributed Optimization
 
+##NOTE##
+The below is a tad out of date, reference Shashvat's new branch to check it out!
+Long story short, you can't pass booleans via command line as they are read as strings ... for some reason, this doesn't result in an error from argparse even when type=bool!!!
+
+
 To start training with the "mod2" files:
 python pong_episode_run_mod2.py
 
