@@ -104,7 +104,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
             if paddles[i].facing == side:
                 action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, eps, TRAIN)
                 curr_actions.append(action)
-            else:
+            else: # If on the other team, simply move the paddle without saving its action
                 action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, eps, TRAIN)
         
         

@@ -1,0 +1,2 @@
+model_checkpoint_path: "eps1foosPong_model_right"
+all_model_checkpoint_paths: "eps1foosPong_model_right"
