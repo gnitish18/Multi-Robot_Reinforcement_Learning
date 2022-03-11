@@ -150,9 +150,9 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
                 for j in range(noPaddles[side-1]):
                     curr_rewards.append(10)
                 for i in lastPaddleIdxs:
-                    if i != -1:
-                        rewards[i][0] = rewards[i][0] + 20
-                        rewards[i][1] = rewards[i][1] + 20
+                    for j in range(noPaddles[side-1]):
+                        if i != -1:
+                            rewards[i][j] = rewards[i][j] + 20
         else:
             #check ball locations and movements
             ball_loc_reward = 0
@@ -167,9 +167,9 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
                         else: ball_loc_reward + 1
 
             # Reward 0 if nothing happens?
-            curr_rewards.append(ball_loc_reward)
-            curr_rewards.append(ball_loc_reward) 
-        
+            for j in range(noPaddles[side-1]):
+                curr_rewards.append(ball_loc_reward)
+
         
         states.append(curr_states)
         actions.append(curr_actions)
@@ -352,7 +352,7 @@ def init_game(args):
                     # print(epochs)
                     # print(batch_size)
                     # print(train_set_size)
-                    foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, savedir)
+                    foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, side, savedir)
                     lr = lr*(1 - lr_decay) # Decay learning rate
                 
                 del memory_states[0:len(ep_states)]
@@ -395,7 +395,7 @@ if __name__ == '__main__':
     parser.add_argument('--whichSide', default = False,type=bool) # True is left, False is right -- refers to which side our trained agents would be playing on
     parser.add_argument('--eps', default = 1.0,type=float) # Epsilon, initial percentage of exploratory behavior
     parser.add_argument('--epsDecay', default = 0.005,type=float) # Epsilon decay
-    parser.add_argument('--yesRender', default = False,type=bool)
+    parser.add_argument('--yesRender', default = True,type=bool)
     parser.add_argument('--withTFmodel', default = True,type=bool)
     parser.add_argument('--noEps', default = 1000,type=int) # Number of Episodes
     parser.add_argument('--stw', default = 10,type=int) # Score to win
