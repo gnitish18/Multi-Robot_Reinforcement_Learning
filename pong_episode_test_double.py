@@ -7,46 +7,86 @@ import numpy as np
 import pickle
 
 import tensorflow as tf
-from objectClasses import *
+from objectClasses_coupled_flipped import *
 
 white = [255, 255, 255]
 black = [0, 0, 0]
 clock = pygame.time.Clock()
 
-class foosPong_model(tf.keras.Model):
+class foosPong_left(tf.keras.Model):
     def __init__(self):
-        super(foosPong_model, self).__init__()
+        super(foosPong_left, self).__init__()
         ###############################################
-        #self.drop = tf.keras.layers.Dropout(0.10)
-        
+        self.drop = tf.keras.layers.Dropout(0.2)
+        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.1)
         self.n1 = tf.keras.layers.BatchNormalization()
+        #self.n2 = tf.keras.layers.BatchNormalization()
         
         self.d1 = tf.keras.layers.Dense(48, activation='relu')
-        self.d2 = tf.keras.layers.Dense(96, activation='relu')
-        self.d3 = tf.keras.layers.Dense(192, activation='relu')
-        self.d4 = tf.keras.layers.Dense(96, activation='relu')
-        self.d5 = tf.keras.layers.Dense(48, activation='relu')
-        
-        # size 4, so that each teammate has action space of (up, down)
-        # output here is Q value for each possible action for each teammate, which gets added together in loss function for total max q-value
-        self.d6 = tf.keras.layers.Dense(4, activation='relu')
+        self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
+#        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(48, activation='relu')
+        self.d7 = tf.keras.layers.Dense(4)
         
         ###############################################
         
     def call(self, x):
+        
+        x = self.n1(x)
+        x = self.gauss(x)
         x = self.d1(x)
         x = self.d2(x)
-        x = self.d3(x)
-        x = self.n1(x)
-        x = self.d4(x)
+        x = self.drop(x)
+#        x = self.d3(x)
+#        x = self.drop(x)
+#        x = self.d4(x)
+#        x = self.drop(x)
         x = self.d5(x)
-        return self.d6(x)
+        x = self.drop(x)
+        x = self.d6(x)
+        return self.d7(x)
         
-
+class foosPong_right(tf.keras.Model):
+    def __init__(self):
+        super(foosPong_right, self).__init__()
+        ###############################################
+        self.drop = tf.keras.layers.Dropout(0.2)
+        self.gauss = tf.keras.layers.GaussianNoise(stddev=0.2)
+        #self.n1 = tf.keras.layers.BatchNormalization()
+        #self.n2 = tf.keras.layers.BatchNormalization()
+        
+        self.d1 = tf.keras.layers.Dense(96, activation='relu')
+        self.d2 = tf.keras.layers.Dense(48*6, activation='relu')
+#        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        self.d5 = tf.keras.layers.Dense(48*6, activation='relu')
+        self.d6 = tf.keras.layers.Dense(96, activation='relu')
+        self.d7 = tf.keras.layers.Dense(4)
+        
+        ###############################################
+        
+    def call(self, x):
+        
+        #x = self.n1(x)
+        x = self.gauss(x)
+        x = self.d1(x)
+        x = self.d2(x)
+        x = self.drop(x)
+#        x = self.d3(x)
+#        x = self.drop(x)
+#        x = self.d4(x)
+#        x = self.drop(x)
+        x = self.d5(x)
+        x = self.drop(x)
+        x = self.d6(x)
+        return self.d7(x)
 
 
 
 def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, eps=0.3, yesRender=True, withTFmodel=False):
+
     score = [0, 0]
     
     states = [] #state of all paddles and all balls, positions and velocities
@@ -76,11 +116,11 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         # Take actions...and add to memory actions
         curr_actions = []
         for i in range(len(paddles)):
-            if paddles[i].facing == 0:
-                action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel)
+            if paddles[i].facing == 1:
+                action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, 0.0)
                 curr_actions.append(action)
             else:
-                action = paddles[i].move(i, paddles, balls, table_size, curr_states, False)
+                action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, 0.0)
         
         
         
@@ -104,7 +144,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         
         
         # Check if a ball scored and add rewards accordingly, so rewards[i] should correspond to actions taken at actions[i]
-        balls, score = check_point(score, balls, table_size)
+        balls, score, idxs = check_point(score, balls, table_size)
         
         
         curr_rewards = []
@@ -123,11 +163,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
             curr_rewards.append(0)
             
         
-        if (np.random.random() < eps) or score != old_score:
-            states.append(curr_states)
-            actions.append(curr_actions)
-            next_states.append(new_states)
-            rewards.append(curr_rewards)
         
 
 
@@ -142,11 +177,12 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
     print(score)
     print("states: ", len(states), "actions: ", len(actions), "rewards: ", len(rewards), "next_states: ", len(next_states))
+    
     return states, actions, rewards, next_states
 
 
 def init_game():
-    table_size = (800, 800)
+    table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
     paddle_speed = 5 #1
@@ -167,9 +203,9 @@ def init_game():
 
 
     paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
-               Paddle((300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 1), \
+               Paddle((50, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 1), \
                Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
-               Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
+               Paddle((table_size[0] - 50, table_size[1] - table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, 1)]
                
     #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
     balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
@@ -177,14 +213,23 @@ def init_game():
     
     
     def pong_ai(paddle_frect, ball_frect, table_size):
-        if paddle_frect.pos[1] + paddle_frect.size[1]/2 < ball_frect.pos[1] + ball_frect.size[1]/2:
-           return "down"
+        if np.random.random() < 0.3:
+            if paddle_frect.pos[1] + paddle_frect.size[1]/2 < ball_frect.pos[1] + ball_frect.size[1]/2:
+               return "down"
+            else:
+               return  "up"
         else:
-           return  "up"
+            if np.random.random() < 0.5:
+                return "down"
+            else:
+               return  "up"
     
-    def foosPong_ai(states, id):
-        
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,24)))
+    def foosPong_ai(states, id, facing):
+        if facing == 1:
+            output = foosPong_l(np.asarray(states, dtype='float32').reshape((1,24)))
+        elif facing == 0:
+            output = foosPong_r(np.asarray(states, dtype='float32').reshape((1,24)))
+            
         team_Q_values = tf.reshape(output, [2,2])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         
@@ -193,9 +238,12 @@ def init_game():
         else:
             return "up"
         
-    def move_getter(withTFmodel, states, id, paddle_frect, ball_frect, table_size):
+    def move_getter(withTFmodel, e, states, id, paddle_frect, ball_frect, table_size, facing):
         if withTFmodel:
-            return foosPong_ai(states, id)
+            if np.random.random() < e:
+                return pong_ai(paddle_frect, ball_frect, table_size)
+            else:
+                return foosPong_ai(states, id, facing)
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
     
@@ -206,47 +254,21 @@ def init_game():
     paddles[2].move_getter = move_getter
     paddles[3].move_getter = move_getter
             
-    eps = 0.1
+    eps = 1.0
     yesRender = True
     withTFmodel = True
-    
-    if withTFmodel:
-        foosPong = foosPong_model()
-        foosPong.load_weights('./trained_weights/foosPong_model_v0')
+    foosPong_l = foosPong_left()
+    foosPong_l.load_weights('./trained_weights/foosPong_model_integrated_leftTeam')
+    foosPong_r = foosPong_right()
+    foosPong_r.load_weights('./trained_weights/foosPong_model_integrated_right_v3')
        
-    #memories =
+    
     episodes = 100
-    memory_states = []
-    memory_actions = []
-    memory_rewards = []
-    memory_next_states = []
     for ep in range(episodes):
         print(f"\nEpisode: {ep}")
-        ep_states, ep_actions, ep_rewards, ep_next_states = game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, eps=eps, yesRender=yesRender, withTFmodel=withTFmodel)
-        memory_states = memory_states + ep_states
-        memory_actions = memory_actions + ep_actions
-        memory_rewards = memory_rewards + ep_rewards
-        memory_next_states = memory_next_states + ep_next_states
+        game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, eps=eps, yesRender=yesRender, withTFmodel=withTFmodel)
         
-        print("memory_states: ", len(memory_states), "memory_actions: ", len(memory_actions), "memory_rewards: ", len(memory_rewards), "memory_next_states: ", len(memory_next_states))
-        
-    with open("memory_states.txt", "wb") as fp:
-        pickle.dump(memory_states, fp)
-    print("States dumped...")
     
-    with open("memory_actions.txt", "wb") as fp:
-        pickle.dump(memory_actions, fp)
-    print("Actions dumped...")
-    
-    with open("memory_rewards.txt", "wb") as fp:
-        pickle.dump(memory_rewards, fp)
-    print("Rewards dumped...")
-    
-    with open("memory_next_states.txt", "wb") as fp:
-        pickle.dump(memory_next_states, fp)
-    print("Next_states dumped...")
-    
-    print(np.asarray(memory_states).shape)
     
     pygame.quit()
 

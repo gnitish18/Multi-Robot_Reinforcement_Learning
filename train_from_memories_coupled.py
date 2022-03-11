@@ -26,8 +26,8 @@ class foosPong_model(tf.keras.Model):
         
         self.d1 = tf.keras.layers.Dense(48, activation='relu')
         self.d2 = tf.keras.layers.Dense(48*4, activation='relu')
-        # self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        # self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+#        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
+#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
         self.d5 = tf.keras.layers.Dense(48*4, activation='relu')
         self.d6 = tf.keras.layers.Dense(48, activation='relu')
         self.d7 = tf.keras.layers.Dense(4)
@@ -35,15 +35,16 @@ class foosPong_model(tf.keras.Model):
         ###############################################
         
     def call(self, x):
+        
         x = self.n1(x)
         x = self.gauss(x)
         x = self.d1(x)
         x = self.d2(x)
         x = self.drop(x)
-        # x = self.d3(x)
-        # x = self.drop(x)
-        # x = self.d4(x)
-        # x = self.drop(x)
+#        x = self.d3(x)
+#        x = self.drop(x)
+#        x = self.d4(x)
+#        x = self.drop(x)
         x = self.d5(x)
         x = self.drop(x)
         x = self.d6(x)
@@ -62,25 +63,27 @@ def loss(curr_output, action, reward, target_output):
     return loss
     
 def train_nn(lr, memories, curr_model, prev_model):
-    #################################################
-    ### Tune these parameters for better training
+#################################################
+### Tune these parameters for better training
     #lr = 0.0000025
     #lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=1e-4, decay_steps=100, decay_rate=0.5)
     epochs = 15
     batch_size = 10
-    #################################################
-    # lr = 0.00000025
-    # epochs = 100 # best so far!
-    # batch_size = 50
+  #################################################
+#    lr = 0.00000025
+#    epochs = 100 # best so far!
+#    batch_size = 50
     
     optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
     train_loss = tf.keras.metrics.Mean(name='train_loss')
+    
     
     @tf.function
     def train(train_data):
         for tensor in train_data:
             train_step(tensor)
-    
+
+
     @tf.function
     def train_step(tensor):
         state = tensor[:, :24]
@@ -96,12 +99,12 @@ def train_nn(lr, memories, curr_model, prev_model):
         train_loss(current_loss)
 
     train_data = []
-    # for i in range(memories[0].shape[0]):
-    #     state = memories[0][i,:]
-    #     action = memories[1][i,:]
-    #     reward = memories[2][i,:]
-    #     next_state = memories[3][i,:]
-    #     train_data.append(np.concatenate((state, action, reward, next_state)))
+#    for i in range(memories[0].shape[0]):
+#        state = memories[0][i,:]
+#        action = memories[1][i,:]
+#        reward = memories[2][i,:]
+#        next_state = memories[3][i,:]
+#        train_data.append(np.concatenate((state, action, reward, next_state)))
 
     data_size = 10000
     #idx = int(np.floor(np.random.random()*(memories[0].shape[0] - data_size)))
@@ -135,3 +138,9 @@ def train_nn(lr, memories, curr_model, prev_model):
 #    curr_model.summary()
 #    #Saves model
 #    curr_model.save_weights('./trained_weights/foosPong_model_v0')
+
+
+
+
+
+

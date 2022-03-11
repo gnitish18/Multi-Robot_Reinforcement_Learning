@@ -12,6 +12,7 @@ import numpy as np
 ### * Idea: crank up bounce speed and paddle speed and then train on PS/BS or vice-versa
 ###          - maybe it would learn to work with any PS/BS ratio....?
 
+
 ## prev_model = loadModel() or simpleModel
 
 class foosPong_model(tf.keras.Model):
@@ -72,12 +73,13 @@ def loss(curr_output, action, reward, target_output):
     return loss
     
 def train_nn(memories, hasPrevModel=False):
-    #################################################
-    ### Tune these parameters for better training
+#################################################
+### Tune these parameters for better training
     lr = 0.001
     epochs = 1000
     batch_size = 10000
-    #################################################  
+  #################################################  
+
     
     optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
     train_loss = tf.keras.metrics.Mean(name='train_loss')
@@ -89,17 +91,19 @@ def train_nn(memories, hasPrevModel=False):
         curr_model.load_weights('./trained_weights/foosPong_model_v0')
         prev_model.load_weights('./trained_weights/foosPong_model_v0')
     
+    
     @tf.function
     def train(train_data):
         steps = 0
         for tensor in train_data:
-            # #updates the target model after so many batches
-            # if steps % 1000 == 0:
-            #     prev_model = curr_model
+#            #updates the target model after so many batches
+#            if steps % 1000 == 0:
+#                prev_model = curr_model
                 
             train_step(tensor)
             steps = steps + 1
-    
+
+
     @tf.function
     def train_step(tensor):
         state = tensor[:, :24]
@@ -113,7 +117,7 @@ def train_nn(memories, hasPrevModel=False):
         grad = tape.gradient(current_loss, curr_model.trainable_variables)
         optimizer.apply_gradients(zip(grad, curr_model.trainable_variables))
         train_loss(current_loss)
-    
+
     train_data = []
     #data_size = 100000
     for i in range(memories[0].shape[0]):
@@ -145,6 +149,7 @@ def train_nn(memories, hasPrevModel=False):
     #Saves model
     curr_model.save_weights('./trained_weights/foosPong_model_v0')
     
+    
 ###########################################################################
 ###########################################################################
 #####################           Training begins         ###################
@@ -165,7 +170,13 @@ with open("memory_next_states.txt", "rb") as fp:
 
 memories = [memory_states, memory_actions, memory_rewards, memory_next_states]
 
+
 ###########################################################################
 # This function starts it all. Set hasPrevModel=False for first trainging attempt
 
 train_nn(memories, hasPrevModel=False)
+
+
+
+
+
