@@ -1,40 +1,25 @@
-# Multi-Robot_Reinforcement_Learning
-AA277 - Multi-Robot Control and Distributed Optimization
+# Multi Agent Reinforcement Learning (MARL)
+Alec Engl, Evan Hedding, Nitish Gudapati and Shashvat Jayakrishnan
+AA277 - Multi-Robot Control and Distributed Optimization, Stanford University
 
-To start training with the coupled files: 
-"python pong_episode_run_coupled.py --eps 1.0 --yesRender false --withTFmodel true"
+To start training with the files, run: 
+"python "pong_episode_run.py" --whichSide True" for training the right side
+"python "pong_episode_run.py" --whichSide False" for training the left side
 
-What it does:
-1. starts running 1000 episodes(games)
-2. collects memories up to 50000 samples and deletes the oldest to maintain that size
-3. after memories is at least 50000, it pauses to retrain the model every 25 episodes
-4. Takes a random collection of 10000 samples from the memories to train on
-5. The right-team's movement choices gradually move from using the deterministic "closest-ball" method to using the model (by episode 200 it's all on the model)
+The following GIF displays the emergent behaviors as a result of the MARL training
 
-I'm using the _coupled files to train and the _test file to run the sim from the most recently saved weights
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/Jitter.gif" width="500" height="350">
+Jitter
 
-Things I'm trying:
-1. Small batch sizes seem to work better ~10 has given me best results so far
-2. learning rate decays with each training seesion
-3. I'm doing smaller epochs (~15) but training more often in the loop (~every 10 episodes)
-4. Added small reward for balls moving in our right half plane (+1 for moving away from our goal line and -1 for moving towards)
-5. Smaller layers in the model seem to work better than larger layers (unless maybe we train longer...)
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/ReadyRest.gif" width="500" height="350">
+Ready Rest
 
-Nitish Gudapati and Shashvat Jayakrishnan\
-Group #108 - AA228/CS238, Stanford University
-\
-\
-\
-The following GIF displays the result of 
-\
-<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/Jitter.gif">
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/Slice.gif" width="500" height="350">
+Slice
 
-<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/ReadyRest.gif" width="350" height="350">
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/CornerChop.gif" width="500" height="350">
+Corner Chop
 
-<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/Slice.gif" width="350" height="350">
-
-<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/CornerChop.gif" width="350" height="350">
-
-<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/LoadShoot.gif" width="350" height="350">
-
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/blob/main/Emergent_Behavior-Gifs/LoadShoot.gif" width="500" height="350">
+Load and Shoot
 
