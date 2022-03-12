@@ -55,7 +55,7 @@ def load_metrics(indir,DQNint):
     
     pctWins = wins/len(scores)
     
-    return act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins # Outputs are all np arrays
+    return act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, pctWins # Outputs are all np arrays
 
 def plot_metrics(indir,act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins,noPaddles,noBalls,DQNint):
     # Plot no. actions per episode

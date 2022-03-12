@@ -1,5 +1,5 @@
-import pygame
-import sys, time, random, os
+
+import pygame, sys, time, random, os
 from pygame.locals import *
 import argparse
 import math
@@ -25,7 +25,7 @@ def write2json(data,path,fname): #NOTE: ONLY takes lists as input, no ndarrays
         # output.write(json.dumps(data))
 
 class foosPong_model(tf.keras.Model):
-    def __init__(self, statespace, actionspace):
+    def __init__(self):
         super(foosPong_model, self).__init__()
         ###############################################
         self.drop = tf.keras.layers.Dropout(0.2)
@@ -33,13 +33,13 @@ class foosPong_model(tf.keras.Model):
         self.n1 = tf.keras.layers.BatchNormalization()
         #self.n2 = tf.keras.layers.BatchNormalization()
         
-        self.d1 = tf.keras.layers.Dense(2*statespace, activation='relu')
-        self.d2 = tf.keras.layers.Dense(2*statespace*4, activation='relu')
+        self.d1 = tf.keras.layers.Dense(28, activation='relu')
+        self.d2 = tf.keras.layers.Dense(28*4, activation='relu')
 #        self.d3 = tf.keras.layers.Dense(48*8, activation='relu')
-        self.d4 = tf.keras.layers.Dense(2*statespace*6, activation='relu')
-        self.d5 = tf.keras.layers.Dense(2*statespace*4, activation='relu')
-        self.d6 = tf.keras.layers.Dense(2*statespace, activation='relu')
-        self.d7 = tf.keras.layers.Dense(actionspace)
+#        self.d4 = tf.keras.layers.Dense(48*8, activation='relu')
+        # self.d5 = tf.keras.layers.Dense(28*4, activation='relu')
+        self.d6 = tf.keras.layers.Dense(28, activation='relu')
+        self.d7 = tf.keras.layers.Dense(4)
         
         ###############################################
         
@@ -52,17 +52,17 @@ class foosPong_model(tf.keras.Model):
         x = self.drop(x)
 #        x = self.d3(x)
 #        x = self.drop(x)
-        x = self.d4(x)
-        x = self.drop(x)
-        x = self.d5(x)
-        x = self.drop(x)
+#        x = self.d4(x)
+#        x = self.drop(x)
+        # x = self.d5(x)
+        # x = self.drop(x)
         x = self.d6(x)
         return self.d7(x)
 
-def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, side, eps, yesRender, withTFmodel, TRAIN): # Make sure that epsilon is processed properly here, reset defaults
+def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, display, eps, yesRender, withTFmodel, TRAIN): # Make sure that epsilon is processed properly here, reset defaults
     # Count both paddles (by team) and balls
     nos = [] # List containing total numbers
-    noPaddles = [0,0] # List to store number of paddles on each team
+    noPaddles = [0,0] # List to store number of paddles one each team
     for eachPad in paddles: # Check which direction paddles are facing and add to team count
         if eachPad.facing == 0:
             noPaddles[1] += 1 # RHS team
@@ -101,16 +101,16 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         # Take actions...and add to memory actions
         curr_actions = []
         for i in range(len(paddles)):
-            if paddles[i].facing == side:
+            if paddles[i].facing == 0:
                 action = paddles[i].move(i, paddles, balls, table_size, curr_states, withTFmodel, eps, TRAIN)
                 curr_actions.append(action)
-            else: # If on the other team, simply move the paddle without saving its action
+            else:
                 action = paddles[i].move(i, paddles, balls, table_size, curr_states, False, eps, TRAIN)
         
         
         
         for ball in balls:
-            paddled = 0 # Reset 'paddled' indicator to zero for each timestep
+            paddled = 0
             inv_move_factor = int((ball.speed[0]**2+ball.speed[1]**2)**.5)
             if inv_move_factor > 0:
                 for i in range(inv_move_factor):
@@ -120,7 +120,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
                 
             if paddled == 1:
                 ball.lastPaddleIdx = idx
-                ball.prev_bounce.no_hits += 1 # If the current ball was paddled in this timestep, then reference which paddle did it and tally a hit
             
        
         new_states = []
@@ -139,39 +138,33 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
         
         curr_rewards = []
         if score != old_score:
-            if score[side] != old_score[side]:
+            if score[0] != old_score[0]:
                 #-1 for each point opponent scores
-                for j in range(noPaddles[side-1]):
-                    curr_rewards.append(-10)
+                curr_rewards.append(-10)
+                curr_rewards.append(-10)
 #                for i in lastPaddleIdxs:
 #                    if i != -1:
 #                        rewards[i][0] = rewards[i][0] - 100
 #                        rewards[i][1] = rewards[i][1] - 100
             else:
                 #+1 each time our team scores
-                for j in range(noPaddles[side-1]):
-                    curr_rewards.append(10)
+                curr_rewards.append(10)
+                curr_rewards.append(10)
                 for i in lastPaddleIdxs:
-                    for j in range(noPaddles[side-1]):
-                        if i != -1:
-                            rewards[i][j] = rewards[i][j] + 20
+                    if i != -1:
+                        rewards[i][0] = rewards[i][0] + 20
+                        rewards[i][1] = rewards[i][1] + 20
         else:
             #check ball locations and movements
             ball_loc_reward = 0
             for ball in balls:
-                if side == 0:
-                    if ball.get_center()[0] > table_size[0]/2:
-                        if ball.speed[0] > 0: ball_loc_reward - 1
-                        else: ball_loc_reward + 1
-                else:
-                    if ball.get_center()[0] < table_size[0]/2:
-                        if ball.speed[0] < 0: ball_loc_reward - 1
-                        else: ball_loc_reward + 1
-
+                if ball.get_center()[0] > table_size[0]/2:
+                    if ball.speed[0] > 0: ball_loc_reward - 1
+                    else: ball_loc_reward + 1
             # Reward 0 if nothing happens?
-            for j in range(noPaddles[side-1]):
-                curr_rewards.append(ball_loc_reward)
-
+            curr_rewards.append(ball_loc_reward)
+            curr_rewards.append(ball_loc_reward) 
+        
         
         states.append(curr_states)
         actions.append(curr_actions)
@@ -187,7 +180,7 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 ##########################################################################
 
-    for i in range(len(balls)): # Why are balls again reviewed here?
+    for i in range(len(balls)):
         balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
     
     print(score)
@@ -199,10 +192,6 @@ def game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, sc
 
 def init_game(args):
     # Define arguments
-    num_paddles = args.numPaddles 
-    num_balls = args.numBalls
-    paddle_dist = args.paddleDist
-    side = 0 if args.whichSide == 'False' else 1 # Defaults to right side
     eps = float(args.eps)
     episodes = args.noEps
     eps_decay = args.epsDecay
@@ -214,33 +203,26 @@ def init_game(args):
     epochs = args.epch
     batch_size = args.batSize
     train_set_size = args.trainSetSize
-    TRAIN = True if args.train == 'True' else False
-    yesRender = False if args.yesRender == 'False' else True 
-    withTFmodel = False if args.withTFmodel == 'False' else True 
-    pretrain = True if args.pretrain == 'True' else False 
-    HUBER = False if args.pretrain == 'False' else True 
-    print("Huber is",HUBER)
-    statespace = 2*2*num_paddles + 4*num_balls
-    actionspace = 2*num_paddles
-    paddle_speed = args.padSpeed
-    init_speed_mag = args.initBallSpeed
+    TRAIN = args.TRAIN
+    yesRender = args.yesRender
+    withTFmodel = args.withTFmodel
+    pretrain = args.pretrain
     
-    # NOTE: uncomment if you aren't Alec
-    # indir = './trained_weights/'+args.indir
-    # savedir = './trained_weights/'+args.savedir
-    indir = 'C:/Users/Alec/Documents/GitHub/Multi-Robot_Reinforcement_Learning/trained_weights/'+args.indir
-    savedir = 'C:/Users/Alec/Documents/GitHub/Multi-Robot_Reinforcement_Learning/trained_weights/'+args.savedir
+    paddle_speed = args.padSpeed
+    
+    indir = './trained_weights/'+args.indir
+    savedir = './trained_weights/'+args.savedir
     
 
     table_size = (800, 400)
     paddle_size = (5, 70)
     ball_size = (15, 15)
     max_angle = 45
-    padding = 30 #distance of the last paddle from the goal and the first paddle from the board center
 
     paddle_bounce = 1.5 #1.2
     wall_bounce = 1.00
     dust_error = 0.00
+    init_speed_mag = 2
     timeout = 0.0003
     clock_rate = 200 #80
     turn_wait_rate = 3
@@ -249,23 +231,12 @@ def init_game(args):
     screen = pygame.display.set_mode(table_size)
     pygame.display.set_caption('PongAIvAI')
 
-    if table_size[0]/2 - 2*padding - (num_paddles - 1)*paddle_dist <= 0:
-        paddle_dist = (table_size[0]/2 - 2*padding)/(num_paddles - 1)
-        
-    paddles = []    
-    for i in range(num_paddles):
-        paddles.append(Paddle((padding + i*paddle_dist, table_size[1]/4), paddle_size, paddle_speed, max_angle, 1, timeout, i))
-    for i in range(num_paddles):
-        paddles.append(Paddle((table_size[0] - padding - i*paddle_dist, table_size[1]/4), paddle_size, paddle_speed, max_angle, 0, timeout, i))
-
-    #paddles = [Paddle((padding, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
-               #Paddle((table_size[0] - padding, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
-               #Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, .5*paddle_speed, max_angle, 0, timeout, 1)]
-    balls = []
-    for j in range(num_balls):
-        balls.append(Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag))
-
-    #balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
+    paddles = [Paddle((30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  1, timeout, 0), \
+               Paddle((table_size[0] - 30, table_size[1]/4), paddle_size, paddle_speed, max_angle,  0, timeout, 0), \
+               Paddle((table_size[0] - 300, table_size[1] - table_size[1]/4), paddle_size, .5*paddle_speed, max_angle, 0, timeout, 1)]
+               
+    #ball = Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)
+    balls = [Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag), Ball(table_size, ball_size, paddle_bounce, wall_bounce, dust_error, init_speed_mag)]
     
     # Count both paddles (by team) and balls
     nos = [] # List containing total numbers
@@ -288,11 +259,12 @@ def init_game(args):
         else:
            return  "up"
     
-    # NOTE: eps not needed here
-    def foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id):
-        output = foosPong(np.asarray(states, dtype='float32').reshape((1,statespace)))
+    
+    def foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id): # Do we need eps here?*
+        dimstate = 2*totalPaddles + 4*noBalls # Computed dimension of state space based on how many things
+        output = foosPong(np.asarray(states, dtype='float32').reshape((1,dimstate)))
         noActions = 2 # CHANGE WHEN DOING NO-OP
-        team_Q_values = tf.reshape(output, [int(totalPaddles/2), noActions])
+        team_Q_values = tf.reshape(output, [noActions,noActions])
         action_idx = tf.math.argmax(team_Q_values[id,:]).numpy()
         
         if action_idx == 0:
@@ -306,9 +278,9 @@ def init_game(args):
                 if np.random.random() < eps:
                     return pong_ai(paddle_frect, ball_frect, table_size)
                 else:
-                    return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id)
-            else: # If not training (i.e. are testing), return pure model output
-                return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, statespace, id)
+                    return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id)
+            else: # If not training (testing), return pure model output
+                return foosPong_ai(states,eps,yesRender,withTFmodel, totalPaddles, noBalls, id)
         else:
             return pong_ai(paddle_frect, ball_frect, table_size)
     
@@ -320,35 +292,24 @@ def init_game(args):
     # Migrate into game and DQN training setup    
     # If not training, load recently trained weights
     if withTFmodel:
-        foosPong = foosPong_model(statespace,actionspace)
-        if pretrain:
-            if side == 0: # If loading pretrained weights
-                foosPong.load_weights(indir+'foosPong_model_right')
-            else: 
-                foosPong.load_weights(indir+'foosPong_model_left')
+        foosPong = foosPong_model()
+        if pretrain: # If loading pretrained weights
+            foosPong.load_weights(indir+'foosPong_model_integrated')
     
-    # Initiate a bunch of lists that will be used to store end-of-game data
     memory_states = []
     memory_actions = []
     memory_rewards = []
     memory_next_states = []
     no_actions = []
-    no_hits = []
     scores = []
     
     for ep in range(episodes):
         print(f"\nEpisode: {ep}")
-        ep_states, ep_actions, ep_rewards, ep_next_states, ep_score = game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, side, eps-eps_decay*ep, yesRender, withTFmodel, TRAIN)
+        ep_states, ep_actions, ep_rewards, ep_next_states, ep_score = game_loop(screen, paddles, balls, table_size, clock_rate, turn_wait_rate, score_to_win, 1, eps-eps_decay*ep, yesRender, withTFmodel, TRAIN)
         
         # Compute total of actions for each paddle * MAY NEED TO CHANGE SIZE FOR DIFF NUM
         pad_act = np.array(ep_actions) # Convert to numpy for easy summing along rows
         ep_no_actions = np.sum(pad_act,axis=0).tolist() # To convert back from np.float32 to 'float' for json saving
-        
-        # Elicit no. hits per paddle
-        # NOTE will store in the order the paddles are 
-        hitsPerPad = []
-        for paddle in paddles:
-            hitsPerPad.append(paddle.no_hits)
         
         memory_states = memory_states + ep_states
         memory_actions = memory_actions + ep_actions
@@ -357,7 +318,6 @@ def init_game(args):
         scores.append(ep_score)
         
         no_actions.append(ep_no_actions)
-        no_hits.append(hitsPerPad)
         print("memory_states: ", len(memory_states), "memory_actions: ", len(memory_actions), "memory_rewards: ", len(memory_rewards), "memory_next_states: ", len(memory_next_states), "\n")
         
         # after so many steps, take a pause
@@ -370,7 +330,7 @@ def init_game(args):
                     # print(epochs)
                     # print(batch_size)
                     # print(train_set_size)
-                    foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, mbuf_len, totalPaddles, noBalls, side, savedir,HUBER)
+                    foosPong = train_nn(lr, memories, foosPong, foosPong, gamma, epochs, batch_size, train_set_size, totalPaddles, noBalls, savedir)
                     lr = lr*(1 - lr_decay) # Decay learning rate
                 
                 del memory_states[0:len(ep_states)]
@@ -381,59 +341,55 @@ def init_game(args):
             # NOTE: Training function already saves its metrics and weights
             write2json(scores,savedir,fname="scores.json")
             write2json(no_actions,savedir,fname="no-actions.json")  # saving total number of actions for each of the trained paddles for each episode
-            write2json(no_hits,savedir,fname="no-hits.json")  # saving total number of actions for each of the trained paddles for each episode
             README = "Episode: %d, can save other identifying features here" %(ep+1)
+            write2json(README,savedir,fname="README.json")
             # write2json(no_bounces,savedir,fname="no-bounces.json")
         else: # If not training, then testing: don't delete anything and save at the end!
               # NOTE: This saves for every episode
             write2json(memory_states,savedir,fname="memory_states.json")
-            #print("States dumped...")
+            print("States dumped...")
             
             write2json(memory_actions,savedir,fname="memory_actions.json")
-            #print("Actions dumped...")
+            print("Actions dumped...")
             
             write2json(memory_rewards,savedir,fname="memory_rewards.json")
-            #print("Rewards dumped...")
+            print("Rewards dumped...")
             
             write2json(memory_next_states,savedir,fname="memory_next_states.json")
-            #print("Next_states dumped...")
+            print("Next_states dumped...")
             
             print(np.asarray(memory_states).shape)
             
-            #print("All saved to trained_weights/"+savedir+"...")
+            print("All saved to trained_weights/"+savedir+"...")
         
         
     pygame.quit()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--numPaddles', default = 2,type=int) # Total number of paddles in a team (e.g. if --numPaddles == 2, we have two on each team)
-    parser.add_argument('--numBalls', default = 4,type=int) # Total number of balls in the game
-    parser.add_argument('--paddleDist', default = 100.0,type=float) # Distance between paddles
-    parser.add_argument('--whichSide', default = 'False',type=str) # True is left, False is right -- refers to which side our trained agents would be playing on
     parser.add_argument('--eps', default = 1.0,type=float) # Epsilon, initial percentage of exploratory behavior
     parser.add_argument('--epsDecay', default = 0.005,type=float) # Epsilon decay
-    parser.add_argument('--yesRender', default = 'False',type=str)
-    parser.add_argument('--withTFmodel', default = 'True',type=str)
+    parser.add_argument('--yesRender', default = False,type=bool)
+    parser.add_argument('--withTFmodel', default = True,type=bool)
     parser.add_argument('--noEps', default = 1000,type=int) # Number of Episodes
     parser.add_argument('--stw', default = 10,type=int) # Score to win
-    parser.add_argument('--memBufLen', default = 100000,type=int) # Max length of memory buffer
-    parser.add_argument('--trainSetSize',default = 20000,type=int) # Subset of memory buffer that will be used in each set of training
+    parser.add_argument('--memBufLen', default = 50000,type=int) # Max length of memory buffer
     parser.add_argument('--gamma', default = .95,type=float) # Discount for TD loss
-    parser.add_argument('--lr', default = .0000025,type=float) # Learning rate of DQN
+    parser.add_argument('--lr', default = .000005,type=float) # Learning rate of DQN
     parser.add_argument('--lrDecay', default = .25,type=float) # Decay rate of DQN lr, per training*implement as per epoch?
     parser.add_argument('--DQNint', default = 10,type=int) # How many episodes to wait between training DQN
     parser.add_argument('--epch',default=15,type=int)
     parser.add_argument('--batSize',default = 10,type=int)
-    parser.add_argument('--train',default = 'True',type=str) # True if training... changes some saving/loading options
-    parser.add_argument('--pretrain',default = 'False',type=str) # If using pretrained weights
+    parser.add_argument('--trainSetSize',default = 10000,type=int)
+    parser.add_argument('--TRAIN',default = True,type=bool) # True if training... changes some saving/loading options
+    parser.add_argument('--pretrain',default = False,type=bool) # If using pretrained weights
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
-    parser.add_argument('--padSpeed',default = 5.0,type=float) # Speed of paddles, original is 5
-    parser.add_argument('--initBallSpeed',default = 2.0,type=float) # Speed of balls, original is 2
-    parser.add_argument('--huber', default = 'False',type=str)
+    parser.add_argument('--padSpeed',default = 5.0,type=float) # Speed of paddles
     
     args = parser.parse_args()
     
     pygame.init()
     init_game(args)
+
+# Save to separate folders when training and testng

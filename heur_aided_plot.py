@@ -32,13 +32,59 @@ DQNint = args.DQNint
 leg = {1.0:'1',.85:'_85',.55:'_55',.7:'_7',.4:'_4'} #,.2:'_2',0.0:'0'
 # This part is really inefficient as we load all the data every single time, but only plot one bit
 
-# Plot accumulated points for each epsilon value on the same plot
+## LOAD STATS
+acts_rg = []
+acts_rc = []
+nhitss_lg = []
+nhitss_lc = []
+nhitss_rg = []
+nhitss_rc = []
+scoress_l = []
+scoress_r = []
+accumPtss = []
+avgPtss = []
+accumWinss = []
+pctWinss = []
+
 for fl,srng in leg:
     path = os.path.join(indir,'eps'+srng)
-    
+    # Load trained weights
     act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins = load_metrics(path, DQNint)
     
-    plt.plot(accumPts,label='eps=%.2f'%fl)
+    acts_rg.append(act_rg)
+    acts_rc.append(act_rc)
+    nhitss_lg.append(nhits_lg)
+    nhitss_lc.append(nhits_lc)
+    nhitss_rg.append(nhits_rg)
+    nhitss_rc.append(nhits_rc)
+    scoress_l.append(scores_l)
+    scoress_r.append(scores_r)
+    accumPtss.append(accumPts)
+    avgPtss.append(avgPts)
+    accumWinss.append(accumWins)
+    pctWinss.append(pctWins)
+    
+    # Load tested weights
+    act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins = load_metrics(path, DQNint)
+    
+    acts_rg.append(act_rg)
+    acts_rc.append(act_rc)
+    nhitss_lg.append(nhits_lg)
+    nhitss_lc.append(nhits_lc)
+    nhitss_rg.append(nhits_rg)
+    nhitss_rc.append(nhits_rc)
+    scoress_l.append(scores_l)
+    scoress_r.append(scores_r)
+    accumPtss.append(accumPts)
+    avgPtss.append(avgPts)
+    accumWinss.append(accumWins)
+    pctWinss.append(pctWins)
+
+
+## PLOT TRAINING STATS
+#1. Plot accumulated points for each epsilon value on the same plot
+for each in accumPtss:
+    plt.plot(each,label='eps=%.2f'%fl)
 
 plt.xlabel('Episodes')
 plt.ylabel('Points')
@@ -46,3 +92,8 @@ plt.title('Cumulative Points Scored for %s with %d Balls'%(title,noBalls))
 pts.legend()
 plt.show()
 plt.savefig(os.path.join(savedir,'%s_accum_pts.png'%title))
+
+#2. 
+
+## PLOT TRAINED MODEL TEST STATS
+#1. Histogram of total percentage of wins
