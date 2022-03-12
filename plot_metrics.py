@@ -36,7 +36,7 @@ def load_metrics(indir,DQNint):
     avgPts = []
     totWins=0
     accumWins = []
-    i == 1 # Episode counter
+    i = 1 # Episode counter
     for eachgame in scores_r:
         totPts += eachgame
         if eachgame == 10:
@@ -53,9 +53,9 @@ def load_metrics(indir,DQNint):
     accumWins = np.array(accumWins)
     avgPts = np.array(avgPts)
     
-    pctWins = wins/len(scores)
+    pctWins = totWins/len(scores)
     
-    return act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, pctWins # Outputs are all np arrays
+    return act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, pctWins # Outputs are all np arrays/scalars
 
 def plot_metrics(indir,act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins,noPaddles,noBalls,DQNint):
     # Plot no. actions per episode
@@ -105,7 +105,7 @@ def plot_metrics(indir,act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, s
     # plt.savefig(os.path.join(indir,'%s_score.png'%title))
 
 
-if __name__='__main__':
+if __name__=='__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--numPaddles', default = 2,type=int) # Total number of paddles in a team (e.g. if --numPaddles == 2, we have two on each team)
     parser.add_argument('--numBalls', default = 4,type=int) # Total number of balls in the game

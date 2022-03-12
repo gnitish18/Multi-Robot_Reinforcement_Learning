@@ -8,7 +8,7 @@ import pickle
 
 import tensorflow as tf
 from objectClasses import *
-from pong_episode_run_mod2 import *
+from pong_episode_run_mod3 import *
 
 # NOTE: may want to change rewards/metrics in this testing script, in that case redesign game_loop
 
@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--initBallSpeed',default = 2.0,type=float) # Speed of balls, original is 2
     parser.add_argument('--DQNint', default = 10,type=int) # How many episodes to wait between training DQN
     parser.add_argument('--stw', default = 10,type=int) # Score to win    
+    parser.add_argument('--whichSide', default = 'False',type=str) # True is left, False is right -- refers to which side our trained agents would be playing on
     
     # These don't matter/aren't used in testing, or don't know
     parser.add_argument('--eps', default = 1.0,type=float) # Epsilon, initial percentage of exploratory behavior
@@ -48,9 +49,10 @@ if __name__ == '__main__':
     parser.add_argument('--withTFmodel', default = 'True',type=str)
     parser.add_argument('--indir',default = 'latest/',type=str) # If want to load weights from a specific subdirectory... defaults to the latest training (saved in trained_weights/latest)
     parser.add_argument('--savedir',default = 'latest/',type=str) # Specify directory to save selected stats in (will save everything, including weights, to trained_weights/<name>)
-
-
-    args = parser.parse_args()
     
+    args = parser.parse_args()
+
+    print("INDIR",args.indir)
+    print("INDIR",args.savedir)    
     pygame.init()
     init_game(args)
