@@ -3,8 +3,8 @@
 #### AA277 - Multi-Robot Control and Distributed Optimization, Stanford University
 
 To start training with the files, run:\
-"python "pong_episode_run.py" --whichSide True" for training the right side\
-"python "pong_episode_run.py" --whichSide False" for training the left side
+"python "pong_episode_run.py" --whichSide True" for training the left side\
+"python "pong_episode_run.py" --whichSide False" for training the right side
 
 The following GIFs display the emergent behaviors as a result of the MARL training with self-play
 
