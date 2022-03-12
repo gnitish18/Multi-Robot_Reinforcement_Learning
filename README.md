@@ -19,3 +19,22 @@ Things I'm trying:
 3. I'm doing smaller epochs (~15) but training more often in the loop (~every 10 episodes)
 4. Added small reward for balls moving in our right half plane (+1 for moving away from our goal line and -1 for moving towards)
 5. Smaller layers in the model seem to work better than larger layers (unless maybe we train longer...)
+
+Nitish Gudapati and Shashvat Jayakrishnan\
+Group #108 - AA228/CS238, Stanford University
+\
+\
+\
+The following GIF displays the result of 
+\
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/Emergent_Behavior-Gifs/Jitter.gif" width="350" height="350">
+\
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/Emergent_Behavior-Gifs/ReadyRest.gif" width="350" height="350">
+\
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/Emergent_Behavior-Gifs/Slice.gif" width="350" height="350">
+\
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/Emergent_Behavior-Gifs/CornerChop.gif" width="350" height="350">
+\
+<img src="https://github.com/gnitish18/Multi-Robot_Reinforcement_Learning/Emergent_Behavior-Gifs/LoadShoot.gif" width="350" height="350">
+
+
