@@ -1,3 +1,24 @@
+ #   PongAIvAI
+#   Authors: Michael Guerzhoy and Denis Begun, 2014-2016.
+#   http://www.cs.toronto.edu/~guerzhoy/
+#   Email: guerzhoy at cs.toronto.edu
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version. You must credit the authors
+#   for the original parts of this code.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   Parts of the code are based on T. S. Hayden Dennison's PongClone (2011)
+#   http://www.pygame.org/project-PongClone-1740-3032.html
+
+#   This code runs with Python 2 and requires PyGame for Python 2
+#   Download PyGame here: https://bitbucket.org/pygame/pygame/downloads
 
 import pygame, sys, time, random, os
 from pygame.locals import *
@@ -57,7 +78,7 @@ class Paddle:
 
     def move(self, i, paddles, balls, table_size, states, withTFmodel, e):
         
-        closest_distance = 10000 # Argument*
+        closest_distance = 10000
         closest_ball = None
         for ball in balls:
             # Checks distance to each ball
@@ -66,9 +87,6 @@ class Paddle:
                 closest_ball = ball
             
         
-        # This is where we actually pass arguments to the move_getter fcn defined in main script
-        # Presumably, we use copy() here to prevent problems
-        # WHere is self.id coming from?
         direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size))
         
         
@@ -145,6 +163,8 @@ class Ball:
 
     def factor_accelerate(self, factor):
         self.speed = (factor*self.speed[0], factor*self.speed[1])
+
+
 
     def move(self, paddles, table_size, move_factor):
         moved = 0
@@ -283,24 +303,20 @@ def render(screen, paddles, balls, score, table_size):
 
 
 
-# *MODIFY THIS FUNCTION when want to do AIvAI... currently asymmetric, only built to find the reward for the RHS team
 def check_point(score, balls, table_size):
     for i in range(len(balls)):
         ball = balls[i]
         lastPaddleIdxs = []
-        
-        # This is the RL trainable team
-        if ball.frect.pos[0]+ball.size[0]/2 < 0: # If the ball goes off of the LHS of the screen
+        if ball.frect.pos[0]+ball.size[0]/2 < 0:
             score[1] += 1
             #tracks which paddle hit the ball last, so that we can attribute the reward to the the right timestep
-            if ball.prev_bounce is not None and ball.prev_bounce.facing == 0: # Checks if 1. ball didn't automatically roll into a goal and 2. tha tthe ball wasn't self-scored (hit by a properly-facing paddle)
-                lastPaddleIdxs.append(ball.lastPaddleIdx) # Keep track of the last paddle from the RL team to have hit the ball
+            if ball.prev_bounce is not None and ball.prev_bounce.facing == 0:
+                lastPaddleIdxs.append(ball.lastPaddleIdx)
                 
-            balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag) # Spawn a new ball to replace the scored one
-        
-        # This is the hard-coded team
-        elif ball.frect.pos[0]+ball.size[0]/2 >= table_size[0]: # IF the ball goes off of the RHS of the screen
-            balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag) # Spawn a new ball
+            balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
+            
+        elif ball.frect.pos[0]+ball.size[0]/2 >= table_size[0]:
+            balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
             score[0] += 1
             #return (ball, score)
 
