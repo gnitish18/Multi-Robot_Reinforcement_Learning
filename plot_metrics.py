@@ -55,7 +55,7 @@ def load_metrics(indir,DQNint):
     
     pctWins = totWins/len(scores)
     
-    return act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, pctWins # Outputs are all np arrays/scalars
+    return act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins, pctWins # Outputs are all np arrays/scalars
 
 def plot_metrics(indir,act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins,noPaddles,noBalls,DQNint):
     # Plot no. actions per episode
@@ -65,8 +65,8 @@ def plot_metrics(indir,act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, s
     plt.ylabel('No. Actions')
     plt.title('Actions per Episode for %s with %d Balls'%(title,noBalls))
     plt.legend()
-    plt.show()
     plt.savefig(os.path.join(indir,'%s_actions.png'%title))
+    plt.show()
 
     # Plot number of hits per episode
     plt.plot(nhits_rg,label='RGoalie')
@@ -77,24 +77,24 @@ def plot_metrics(indir,act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, s
     plt.ylabel('No. Ball Hits')
     plt.title('Cumulative Ball Hits for %s with %d Balls'%(title,noBalls))
     plt.legend()
-    plt.show()
     plt.savefig(os.path.join(indir,'%s_hits.png'%title))
+    plt.show()
 
     # Plot total number of points as episodes progress
     plt.plot(accumPts)
     plt.xlabel('Episodes')
     plt.ylabel('Points')
     plt.title('Cumulative Points Scored for %s with %d Balls'%(title,noBalls))
-    plt.show()
     plt.savefig(os.path.join(indir,'%s_accum_pts.png'%title))
+    plt.show()
 
     # Plot average points scored per training
     plt.plot(avgPts)
     plt.xlabel('No. Times Trained (#episodes/%d)'%DQNint)
     plt.ylabel('Points')
     plt.title('Average Points Scored over training for %s with %d Balls'%(title,noBalls))
-    plt.show()
     plt.savefig(os.path.join(indir,'%s_avg_pts.png'%title))
+    plt.show()
 
     # plt.plot(scores_r)
     # plt.xlabel('Episodes')
@@ -127,5 +127,5 @@ if __name__=='__main__':
     noBalls = args.numBalls
     DQNint = args.DQNint
     
-    act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins = load_metrics(indir, DQNint)
-    plot_metrics(indir, act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins, noPaddles, noBalls, DQNint)
+    act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins, pctWins= load_metrics(indir, DQNint)
+    plot_metrics(indir, act_rg, act_rc, nhits_lg, nhits_lc, nhits_rg, nhits_rc, scores_l, scores_r, accumPts, avgPts, accumWins, pctWins, noPaddles, noBalls, DQNint)
