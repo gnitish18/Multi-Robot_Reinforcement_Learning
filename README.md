@@ -1,6 +1,6 @@
 # Multi Agent Reinforcement Learning (MARL)
-### AA277 - Multi-Robot Control and Distributed Optimization, Stanford University
-#### Alec Engl, Evan Hedding, Nitish Gudapati and Shashvat Jayakrishnan
+### Alec Engl, Evan Hedding, Nitish Gudapati and Shashvat Jayakrishnan
+#### AA277 - Multi-Robot Control and Distributed Optimization, Stanford University
 
 To start training with the files, run:\
 "python "pong_episode_run.py" --whichSide True" for training the right side\
