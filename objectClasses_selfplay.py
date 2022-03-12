@@ -1,3 +1,25 @@
+ #   PongAIvAI
+#   Authors: Michael Guerzhoy and Denis Begun, 2014-2016.
+#   http://www.cs.toronto.edu/~guerzhoy/
+#   Email: guerzhoy at cs.toronto.edu
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version. You must credit the authors
+#   for the original parts of this code.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   Parts of the code are based on T. S. Hayden Dennison's PongClone (2011)
+#   http://www.pygame.org/project-PongClone-1740-3032.html
+
+#   This code runs with Python 2 and requires PyGame for Python 2
+#   Download PyGame here: https://bitbucket.org/pygame/pygame/downloads
+
 import pygame, sys, time, random, os
 from pygame.locals import *
 
@@ -53,8 +75,19 @@ class Paddle:
 
     def factor_accelerate(self, factor):
         self.speed = factor*self.speed
-    
-    def move(self, i, paddles, balls, table_size, states, withTFmodel, e):
+
+    def move(self, i, paddles, balls, table_size, states, withTFmodel, e, facing, TRAIN):
+        # Count both paddles (by team) and balls
+        nos = [] # List containing total numbers
+        noPaddles = [0,0] # List to store number of paddles one each team
+        for eachPad in paddles: # Check which direction paddles are facing and add to team count
+            if eachPad.facing == 0:
+                noPaddles[1] += 1 # RHS team
+            else:
+                noPaddles[0] += 1 # LHS team
+                
+        nos.append(noPaddles)
+        nos.append([len(balls)])
         
         closest_distance = 10000
         closest_ball = None
@@ -65,7 +98,7 @@ class Paddle:
                 closest_ball = ball
             
         
-        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size), self.facing)
+        direction = self.move_getter(withTFmodel, e, states, self.id, self.frect.copy(), closest_ball.frect.copy(), tuple(table_size),nos,facing,TRAIN)
         
         
         if direction == "up":
@@ -284,27 +317,18 @@ def render(screen, paddles, balls, score, table_size):
 def check_point(score, balls, table_size):
     for i in range(len(balls)):
         ball = balls[i]
-        lastPaddleIdxs_left = []
-        lastPaddleIdxs_right = []
+        lastPaddleIdxs = []
         if ball.frect.pos[0]+ball.size[0]/2 < 0:
             score[1] += 1
             #tracks which paddle hit the ball last, so that we can attribute the reward to the the right timestep
             if ball.prev_bounce is not None and ball.prev_bounce.facing == 0:
-                lastPaddleIdxs_left.append(ball.lastPaddleIdx)
-            elif ball.prev_bounce is not None and ball.prev_bounce.facing == 1:
-                lastPaddleIdxs_right.append(ball.lastPaddleIdx)
+                lastPaddleIdxs.append(ball.lastPaddleIdx)
                 
             balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
             
         elif ball.frect.pos[0]+ball.size[0]/2 >= table_size[0]:
-            score[0] += 1
-            if ball.prev_bounce is not None and ball.prev_bounce.facing == 0:
-                lastPaddleIdxs_left.append(ball.lastPaddleIdx)
-            elif ball.prev_bounce is not None and ball.prev_bounce.facing == 1:
-                lastPaddleIdxs_right.append(ball.lastPaddleIdx)
-                
             balls[i] = Ball(table_size, ball.size, ball.paddle_bounce, ball.wall_bounce, ball.dust_error, ball.init_speed_mag)
-            
-            
+            score[0] += 1
+            #return (ball, score)
 
-    return (balls, score, lastPaddleIdxs_left, lastPaddleIdxs_right)
+    return (balls, score, lastPaddleIdxs)
